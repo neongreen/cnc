@@ -42,6 +42,7 @@ export function drawGraph(graphData, graphHeight, levels) {
   svg.attr("width", width).attr("height", height)
 
   const radius = 30 // Radius for nodes
+  const arrowSize = 5 // Size of the arrow marker
 
   // Create arrow marker
   svg
@@ -49,14 +50,14 @@ export function drawGraph(graphData, graphHeight, levels) {
     .append("marker")
     .attr("id", "arrowhead")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", radius - 2)
+    .attr("refX", 0)
     .attr("refY", 0)
-    .attr("markerWidth", 8)
-    .attr("markerHeight", 8)
+    .attr("markerWidth", arrowSize)
+    .attr("markerHeight", arrowSize)
     .attr("orient", "auto")
     .append("path")
+    .attr("class", "arrowhead")
     .attr("d", "M0,-5L10,0L0,5")
-    .attr("fill", "#666")
 
   // Position nodes in hierarchical layout based on topological levels
   const nodePositions = new Map()
@@ -94,13 +95,24 @@ export function drawGraph(graphData, graphHeight, levels) {
     .stop() // Don't run the simulation, we have fixed positions
 
   // Create edges
-  const link = svg
+  svg
     .append("g")
-    .selectAll("line")
+    .selectAll("path")
     .data(graphData.edges)
     .enter()
-    .append("line")
+    .append("path")
     .attr("class", "edge")
+    .attr("marker-end", "url(#arrowhead)") // Add marker to the end of the path
+    .attr("d", (d) => {
+      // Adjust target point to end at the circle's edge
+      return d3
+        .linkHorizontal()
+        .x((d) => d.x)
+        .y((d) => d.y)({
+        source: { x: d.source.x + radius, y: d.source.y },
+        target: { x: d.target.x - radius - arrowSize - 4, y: d.target.y },
+      })
+    })
 
   // Create nodes
   const node = svg
@@ -122,22 +134,7 @@ export function drawGraph(graphData, graphHeight, levels) {
     .attr("class", "node-text")
     .text((d) => d.name)
 
-  // Update positions function
-  function updatePositions() {
-    link
-      .attr("x1", (d) => d.source.x)
-      .attr("y1", (d) => d.source.y)
-      .attr("x2", (d) => d.target.x)
-      .attr("y2", (d) => d.target.y)
+  node.attr("cx", (d) => d.x).attr("cy", (d) => d.y)
 
-    node.attr("cx", (d) => d.x).attr("cy", (d) => d.y)
-
-    nodeText.attr("x", (d) => d.x).attr("y", (d) => d.y)
-  }
-
-  // Set up simulation tick handler
-  simulation.on("tick", updatePositions)
-
-  // Trigger initial render
-  updatePositions()
+  nodeText.attr("x", (d) => d.x).attr("y", (d) => d.y)
 }

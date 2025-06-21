@@ -301,9 +301,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     edges = []
 
     for winner, loser in outcomes:
-        edges.append(
-            {"source": winner, "target": loser, "label": f"{winner} > {loser}"}
-        )
+        edges.append({"source": winner, "target": loser})
 
     graph_data = {"nodes": nodes, "edges": edges}
 
