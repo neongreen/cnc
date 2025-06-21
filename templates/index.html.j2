@@ -89,6 +89,12 @@
       fill: #333;
       text-anchor: middle;
     }
+
+    .pear-link {
+      text-decoration: none;
+      color: inherit;
+      border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
 
@@ -103,7 +109,8 @@
   <p>Scores are given for <i>row player – column player</i>.</p>
   <p>Total players: {{ num_participants }}</p>
   <p>
-    Completion rate: {{ matches_done }} / {{ total_possible_pairings }} pairings ({{ completion_rate }}% done)
+    Completion rate: {{ matches_done }} / {{ total_possible_pairings }} <a href="https://en.wikipedia.org/wiki/Pear"
+      class="pear-link">pearings</a> ({{ completion_rate }}% done)
   </p>
   {{ table_content | safe }}
 
