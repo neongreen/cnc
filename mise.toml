@@ -1,0 +1,6 @@
+[tools]
+uv = "latest"
+
+[tasks.dev]
+description = "Start a dev server"
+run = "uv run flask run --debug"

@@ -1,10 +1,13 @@
-# How to run: uv run main.py
-# How to add dependencies: uv add <dependency>
+# How to run: `uv run flask run --debug`
+# How to add dependencies: `uv add <dependency>`
 
 from dataclasses import dataclass
 from datetime import date
 from babel.dates import format_date
 from babel.core import Locale
+from flask import Flask, send_from_directory
+import os
+import shutil
 
 
 @dataclass
@@ -362,14 +365,13 @@ def generate_match_html(matches: list[MatchResult]) -> str:
 
     graph_html = f"""
     <div class="graph-container">
-        <h2>Match Outcomes Graph</h2>
-        <p>This graph shows the actual match outcomes. An arrow from A to B means A beat B in a match.</p>
+        <h2>Match outcomes graph</h2>
+        <p>An arrow from A to B means A beat B in a match.</p>
         <svg id="graph-svg"></svg>
     </div>
-    
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="graph.js"></script>
-    <script>
+
+    <script type="module">
+        import {{ drawGraph }} from './graph.js';
         const graphData = {json.dumps(graph_data)};
         const levelsData = {json.dumps(levels)};
         drawGraph(graphData, {graph_height}, levelsData);
@@ -386,25 +388,30 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     return html_content
 
 
-if __name__ == "__main__":
-    import os
-    import shutil
+app = Flask(__name__)
 
+
+@app.route("/")
+def serve_html():
     html_output = generate_match_html(MATCH_LOG)
-
     output_dir = "build"
-    os.makedirs(
-        output_dir, exist_ok=True
-    )  # Create the build directory if it doesn't exist
-
-    # Copy graph.js to the build directory
+    os.makedirs(output_dir, exist_ok=True)
     shutil.copyfile("graph.js", os.path.join(output_dir, "graph.js"))
-
     output_path = os.path.join(output_dir, "index.html")
     with open(output_path, "w") as f:
         f.write(html_output)
-
     print(f"Generated {output_path}")
+    return send_from_directory(output_dir, "index.html")
 
-    # Open the HTML file in the default browser
-    os.system(f"open {output_path}")
+
+@app.route("/<path:filename>")
+def serve_static(filename):
+    return send_from_directory("build", filename)
+
+
+if __name__ == "__main__":
+    PORT = 5000
+    print(f"Serving at http://localhost:{PORT}")
+    print("Press Ctrl+C to stop the server")
+    os.system(f"open http://localhost:{PORT}/")
+    app.run(port=PORT, debug=True, use_reloader=False)

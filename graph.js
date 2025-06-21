@@ -1,3 +1,5 @@
+import * as d3 from "https://esm.sh/d3"
+
 /**
  * @typedef {object} Node
  * @property {string} id - The unique identifier for the node.
@@ -26,7 +28,8 @@
  * @param {number} graphHeight - The height of the graph SVG.
  * @param {Array<Array<string>>} levels - An array of arrays, where each inner array represents a level of nodes in the graph.
  */
-function drawGraph(graphData, graphHeight, levels) {
+
+export function drawGraph(graphData, graphHeight, levels) {
   const svg = d3.select("#graph-svg")
   // width same as table width (determined dynamically), or viewport width, whichever is bigger
   const width = Math.max(

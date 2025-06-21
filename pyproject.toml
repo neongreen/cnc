@@ -5,4 +5,5 @@ description = ""
 requires-python = ">=3.13"
 dependencies = [
     "babel>=2.17.0",
+    "flask>=3.1.1",
 ]
