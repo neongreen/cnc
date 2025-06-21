@@ -1,11 +1,11 @@
-# How to run: `uv run flask run --debug -h 0.0.0.0 -p 5500`
+# How to run: see mise.toml
 # How to add dependencies: `uv add <dependency>`
 
 from dataclasses import dataclass
 from datetime import date
 from babel.dates import format_date
 from babel.core import Locale
-from flask import Flask, send_from_directory
+from flask import Flask, render_template, send_from_directory
 import os
 import shutil
 
@@ -255,63 +255,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
 
     graph_height = 800
 
-    html_content: str = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maturity elo</title>
-    <style>
-        html {{ font-size: 12px; }}
-        body {{ font-family: sans-serif; margin: 20px; }}
-        table {{ width: auto; border-collapse: collapse; margin-top: 20px; }}
-        th, td {{ border: 1px solid #ddd; padding: 0.25rem 0.5rem; text-align: center; min-width: 4rem; }}
-        th {{ background-color: #f2f2f2; font-weight: bold; font-size: 1rem; }}
-        .date-text {{ color: gray; font-size: 0.75rem; }}
-        .score-text {{ font-size: 1rem; }}
-        td.diagonal {{ background-color: #f9f9f9; }}
-        .win-cell {{ background-color: #d4edda; }} /* Light green */
-        .loss-cell {{ background-color: #f8d7da; }} /* Light red */
-        
-        /* Graph styles */
-        .graph-container {{ 
-            margin: 20px 0; 
-            border: 1px solid #ddd; 
-            padding: 20px; 
-            background-color: #fafafa; 
-        }}
-        #graph-svg {{
-            width: 100%;
-            height: {graph_height}px;
-            border: 1px solid #ccc;
-        }}
-        .node {{
-            fill: #e3f2fd;
-            stroke: #1976d2;
-            stroke-width: 2px;
-        }}
-        .node-text {{
-            font-family: sans-serif;
-            font-size: 12px;
-            font-weight: bold;
-            text-anchor: middle;
-            dominant-baseline: central;
-        }}
-        .edge {{
-            stroke: #666;
-            stroke-width: 2px;
-            marker-end: url(#arrowhead);
-        }}
-        .edge-label {{
-            font-family: sans-serif;
-            font-size: 10px;
-            fill: #333;
-            text-anchor: middle;
-        }}
-    </style>
-</head>
-<body>
+    table_content: str = f"""
     <table>
         <thead>
             <tr>
@@ -323,10 +267,10 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     """
 
     for row_player in participants_list:
-        html_content += f"<tr><th>{row_player}</th>"
+        table_content += f"<tr><th>{row_player}</th>"
         for col_player in participants_list:
             if row_player == col_player:
-                html_content += "<td class='diagonal'>-</td>"
+                table_content += "<td class='diagonal'>-</td>"
             else:
                 key = sort_tuple((row_player, col_player))
                 cell_content = ""
@@ -358,8 +302,13 @@ def generate_match_html(matches: list[MatchResult]) -> str:
                         cell_content += f"<div class='date-text'>{formatted_date}</div><div class='score-text'>{score_display}</div>"
                 else:
                     cell_content = "-"
-                html_content += f"<td class='{cell_class}'>{cell_content}</td>"
-        html_content += "</tr>"
+                table_content += f"<td class='{cell_class}'>{cell_content}</td>"
+        table_content += "</tr>"
+
+    table_content += """
+        </tbody>
+    </table>
+    """
 
     # Generate D3.js graph data
     import json
@@ -375,29 +324,13 @@ def generate_match_html(matches: list[MatchResult]) -> str:
 
     graph_data = {"nodes": nodes, "edges": edges}
 
-    graph_html = f"""
-    <div class="graph-container">
-        <h2>Match outcomes graph</h2>
-        <p>An arrow from A to B means A beat B in a match.</p>
-        <svg id="graph-svg"></svg>
-    </div>
-
-    <script type="module">
-        import {{ drawGraph }} from './graph.js';
-        const graphData = {json.dumps(graph_data)};
-        const levelsData = {json.dumps(levels)};
-        drawGraph(graphData, {graph_height}, levelsData);
-    </script>
-    """
-
-    html_content += f"""
-        </tbody>
-    </table>
-    {graph_html}
-</body>
-</html>
-    """
-    return html_content
+    return render_template(
+        "index.html.j2",
+        table_content=table_content,
+        graph_data=json.dumps(graph_data),
+        levels_data=json.dumps(levels),
+        graph_height=graph_height,
+    )
 
 
 def build():
@@ -413,18 +346,15 @@ def build():
 
 
 app = Flask(__name__)
+with app.app_context():
+    build()
 
 
 @app.route("/")
 def serve_html():
-    build()
     return send_from_directory("build", "index.html")
 
 
 @app.route("/<path:filename>")
 def serve_static(filename):
     return send_from_directory("build", filename)
-
-
-if __name__ == "__main__":
-    build()

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maturity elo</title>
+  <style>
+    html {
+      font-size: 14px;
+    }
+
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+
+    table {
+      width: auto;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 0.25rem 0.5rem;
+      text-align: center;
+      min-width: 4rem;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .date-text {
+      color: gray;
+      font-size: 0.75rem;
+    }
+
+    .score-text {
+      font-size: 1rem;
+    }
+
+    td.diagonal {
+      background-color: #f9f9f9;
+    }
+
+    .win-cell {
+      background-color: #d4edda;
+    }
+
+    /* Light green */
+    .loss-cell {
+      background-color: #f8d7da;
+    }
+
+    /* Light red */
+
+    /* Graph styles */
+    .graph-container {
+      margin: 20px 0;
+      border: 1px solid #ddd;
+      padding: 20px;
+      background-color: #fafafa;
+    }
+
+    #graph-svg {
+      width: 100%;
+
+      height: {
+          {
+          graph_height
+        }
+      }
+
+      px;
+      border: 1px solid #ccc;
+    }
+
+    .node {
+      fill: #e3f2fd;
+      stroke: #1976d2;
+      stroke-width: 2px;
+    }
+
+    .node-text {
+      font-family: sans-serif;
+      font-size: 12px;
+      font-weight: bold;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+
+    .edge {
+      stroke: #666;
+      stroke-width: 2px;
+      marker-end: url(#arrowhead);
+    }
+
+    .edge-label {
+      font-family: sans-serif;
+      font-size: 10px;
+      fill: #333;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+
+<body>
+  {{ table_content | safe }}
+
+  <div class="graph-container">
+    <h2>Match outcomes graph</h2>
+    <p>An arrow from A to B means A beat B in a match.</p>
+    <svg id="graph-svg"></svg>
+  </div>
+
+  <script type="module">
+    import { drawGraph } from './graph.js';
+    const graphData = {{ graph_data | safe }};
+    const levelsData = {{ levels_data | safe }};
+    drawGraph(graphData, {{ graph_height }}, levelsData);
+  </script>
+</body>
+
+</html>
