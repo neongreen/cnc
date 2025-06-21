@@ -92,6 +92,121 @@ def calculate_participant_stats(
     return sorted_stats
 
 
+def get_match_outcomes(match_log_data: list[dict]) -> list[tuple[str, str]]:
+    outcomes = []
+    for match in match_log_data:
+        players = [key for key in match.keys() if key != "date"]
+        if len(players) == 2:
+            p1, p2 = players
+            score1, score2 = match[p1], match[p2]
+            if score1 > score2:
+                outcomes.append((p1, p2))
+            elif score1 < score2:
+                outcomes.append((p2, p1))
+    return outcomes
+
+
+def topological_sort_participants(
+    outcomes: list[tuple[str, str]], participants: set[str]
+) -> tuple[str, list[list[str]]]:
+    from graphlib import TopologicalSorter
+
+    # Build the graph for TopologicalSorter
+    # TopologicalSorter expects dependencies, so we need to reverse the relationship
+    # If A beats B, then B depends on A (A comes before B in ranking)
+    graph = {}
+
+    # Initialize all participants with no dependencies
+    for p in participants:
+        graph[p] = set()
+
+    # Add dependencies based on outcomes
+    for winner, loser in outcomes:
+        graph[loser].add(winner)
+
+    # Build a reachability graph to check if there's any path between nodes
+    def has_path(start, end, graph):
+        """Check if there's a path from start to end in the dependency graph"""
+        if start == end:
+            return True
+        visited = set()
+        stack = [start]
+
+        while stack:
+            current = stack.pop()
+            if current in visited:
+                continue
+            visited.add(current)
+
+            if current == end:
+                return True
+
+            # Add all nodes that depend on current (reverse direction)
+            for node in graph:
+                if current in graph[node]:
+                    stack.append(node)
+
+            # Add all nodes that current depends on
+            for dep in graph.get(current, []):
+                stack.append(dep)
+
+        return False
+
+    # Use TopologicalSorter with batch processing, but group only truly equivalent nodes
+    ts = TopologicalSorter(graph)
+    result_parts = []
+    levels = []  # Store the levels for graph visualization
+    ts.prepare()
+
+    while ts.is_active():
+        # Get nodes that are ready to be processed (no remaining dependencies)
+        ready_nodes = ts.get_ready()
+        if ready_nodes:
+            # Group nodes that have no path between them
+            groups = []
+            remaining = list(ready_nodes)
+
+            while remaining:
+                current_group = [remaining.pop(0)]
+                i = 0
+                while i < len(remaining):
+                    node = remaining[i]
+                    # Check if this node has a path to/from any node in current group
+                    has_connection = False
+                    for group_node in current_group:
+                        if has_path(node, group_node, graph) or has_path(
+                            group_node, node, graph
+                        ):
+                            has_connection = True
+                            break
+
+                    if not has_connection:
+                        current_group.append(remaining.pop(i))
+                    else:
+                        i += 1
+
+                groups.append(sorted(current_group))
+
+            # Add groups to result and levels
+            level_groups = []
+            for group in sorted(groups):  # Sort groups for consistency
+                level_groups.extend(group)
+                if len(group) == 1:
+                    result_parts.append(group[0])
+                else:
+                    result_parts.append("{" + ", ".join(group) + "}")
+
+            levels.append(level_groups)
+
+            # Mark these nodes as done
+            ts.done(*ready_nodes)
+        else:
+            # If no nodes are ready but the sorter is still active, we have a cycle
+            break
+
+    return " > ".join(result_parts), levels
+
+
 def generate_match_html(match_log_data: list[dict]) -> str:
     # Create a dictionary to store match data for quick lookup
     match_dict: dict[tuple[str, str], list[MatchResult]] = {}
@@ -119,7 +234,13 @@ def generate_match_html(match_log_data: list[dict]) -> str:
 
     sorted_participants_stats = calculate_participant_stats(match_dict, participants)
     participants_list = [p.name for p in sorted_participants_stats]
-    del participants
+
+    # Generate topological sort string and levels
+    outcomes = get_match_outcomes(match_log_data)
+    topological_order_str, levels = topological_sort_participants(
+        outcomes, participants
+    )
+    del participants  # No longer needed after this point
 
     html_content: str = f"""
 <!DOCTYPE html>
@@ -139,6 +260,42 @@ def generate_match_html(match_log_data: list[dict]) -> str:
         td.diagonal {{ background-color: #f9f9f9; }}
         .win-cell {{ background-color: #d4edda; }} /* Light green */
         .loss-cell {{ background-color: #f8d7da; }} /* Light red */
+        
+        /* Graph styles */
+        .graph-container {{ 
+            margin: 20px 0; 
+            border: 1px solid #ddd; 
+            padding: 20px; 
+            background-color: #fafafa; 
+        }}
+        #graph-svg {{
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }}
+        .node {{
+            fill: #e3f2fd;
+            stroke: #1976d2;
+            stroke-width: 2px;
+        }}
+        .node-text {{
+            font-family: sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }}
+        .edge {{
+            stroke: #666;
+            stroke-width: 2px;
+            marker-end: url(#arrowhead);
+        }}
+        .edge-label {{
+            font-family: sans-serif;
+            font-size: 10px;
+            fill: #333;
+            text-anchor: middle;
+        }}
     </style>
 </head>
 <body>
@@ -191,9 +348,154 @@ def generate_match_html(match_log_data: list[dict]) -> str:
                 html_content += f"<td class='{cell_class}'>{cell_content}</td>"
         html_content += "</tr>"
 
-    html_content += """
+    # Generate D3.js graph data
+    import json
+
+    # Create nodes and edges for D3.js
+    nodes = [{"id": name, "name": name} for name in participants_list]
+    edges = []
+
+    for winner, loser in outcomes:
+        edges.append(
+            {"source": winner, "target": loser, "label": f"{winner} > {loser}"}
+        )
+
+    graph_data = {"nodes": nodes, "edges": edges}
+
+    graph_html = f"""
+    <div class="graph-container">
+        <h2>Match Outcomes Graph</h2>
+        <p>This graph shows the actual match outcomes. An arrow from A to B means A beat B in a match.</p>
+        <svg id="graph-svg"></svg>
+    </div>
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        const graphData = {json.dumps(graph_data)};
+        
+        const svg = d3.select("#graph-svg");
+        // width same as table width (determined dynamically), or viewport width, whichever is bigger
+        const width = Math.max(document.querySelector("table").offsetWidth, window.innerWidth);
+        const height = 600;
+        
+        // Set SVG dimensions explicitly
+        svg.attr("width", width).attr("height", height);
+
+        // Create arrow marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 25)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#666");
+        
+        // Position nodes in hierarchical layout based on topological levels
+        const levels = {json.dumps(levels)};
+        const nodePositions = new Map();
+        
+        levels.forEach((level, levelIndex) => {{
+            const x = (levelIndex + 1) * (width / (levels.length + 1));
+            level.forEach((nodeName, nodeIndex) => {{
+                const y = (nodeIndex + 1) * (height / (level.length + 1));
+                nodePositions.set(nodeName, {{x, y}});
+            }});
+        }});
+        
+        // Set fixed positions for nodes
+        graphData.nodes.forEach(node => {{
+            const pos = nodePositions.get(node.id);
+            if (pos) {{
+                node.x = pos.x;
+                node.y = pos.y;
+                node.fx = pos.x; // Fix x position
+                node.fy = pos.y; // Fix y position
+            }}
+        }});
+        
+        // Create a simple simulation just for the links
+        const simulation = d3.forceSimulation(graphData.nodes)
+            .force("link", d3.forceLink(graphData.edges).id(d => d.id).distance(100).strength(0))
+            .stop(); // Don't run the simulation, we have fixed positions
+        
+        // Create edges
+        const link = svg.append("g")
+            .selectAll("line")
+            .data(graphData.edges)
+            .enter().append("line")
+            .attr("class", "edge");
+        
+        // Create nodes
+        const node = svg.append("g")
+            .selectAll("circle")
+            .data(graphData.nodes)
+            .enter().append("circle")
+            .attr("class", "node")
+            .attr("r", 20)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+        
+        // Add node labels
+        const nodeText = svg.append("g")
+            .selectAll("text")
+            .data(graphData.nodes)
+            .enter().append("text")
+            .attr("class", "node-text")
+            .text(d => d.name);
+        
+        // Update positions function
+        function updatePositions() {{
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+            
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+            
+            nodeText
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+        }}
+        
+        // Set up simulation tick handler
+        simulation.on("tick", updatePositions);
+        
+        // Trigger initial render
+        updatePositions();
+        
+        // Drag functions
+        function dragstarted(event, d) {{
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }}
+        
+        function dragged(event, d) {{
+            d.fx = event.x;
+            d.fy = event.y;
+        }}
+        
+        function dragended(event, d) {{
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }}
+    </script>
+    """
+
+    html_content += f"""
         </tbody>
     </table>
+    {graph_html}
 </body>
 </html>
     """
@@ -211,5 +513,6 @@ if __name__ == "__main__":
         f.write(html_output)
 
     print(f"Generated {output_path}")
+
     # Open the HTML file in the default browser
     os.system(f"open {output_path}")
