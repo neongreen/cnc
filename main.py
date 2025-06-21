@@ -1,5 +1,10 @@
+# Run: uv run main.py
+# Add dependencies: uv add <dependency>
+
 from dataclasses import dataclass
 from datetime import date
+from babel.dates import format_date
+from babel.core import Locale
 
 MATCH_LOG = [
     {"date": date(2025, 6, 3), "sirius": 11, "chez": 1},
@@ -67,7 +72,7 @@ def generate_match_html(match_log_data: list[dict]) -> str:
                 match_dict[key] = []
             match_dict[key].append(
                 MatchResult(
-                    date=match["date"].isoformat(),
+                    date=match["date"],
                     player1=p1,
                     player2=p2,
                     score1=match[p1],
@@ -79,6 +84,8 @@ def generate_match_html(match_log_data: list[dict]) -> str:
     participants: set[str] = set()
     for p1, p2 in match_dict.keys():
         participants.update([p1, p2])
+    participants_list = sorted(participants)
+    del participants
 
     html_content: str = f"""
 <!DOCTYPE html>
@@ -90,11 +97,13 @@ def generate_match_html(match_log_data: list[dict]) -> str:
     <style>
         body {{ font-family: sans-serif; margin: 20px; }}
         table {{ width: auto; border-collapse: collapse; margin-top: 20px; }}
-        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: center; min-width: 120px; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: center; min-width: 60px; }}
         th {{ background-color: #f2f2f2; font-weight: bold; }}
         .date-text {{ color: gray; font-size: small; }}
         .score-text {{ font-size: medium; }}
         td.diagonal {{ background-color: #f9f9f9; }}
+        .win-cell {{ background-color: #d4edda; }} /* Light green */
+        .loss-cell {{ background-color: #f8d7da; }} /* Light red */
     </style>
 </head>
 <body>
@@ -102,20 +111,21 @@ def generate_match_html(match_log_data: list[dict]) -> str:
         <thead>
             <tr>
                 <th></th>
-                {"".join(f"<th>{p}</th>" for p in sorted(participants))}
+                {"".join(f"<th>{p}</th>" for p in participants_list)}
             </tr>
         </thead>
         <tbody>
     """
 
-    for i, row_player in enumerate(participants):
+    for row_player in participants_list:
         html_content += f"<tr><th>{row_player}</th>"
-        for j, col_player in enumerate(participants):
-            if i == j:
+        for col_player in participants_list:
+            if row_player == col_player:
                 html_content += "<td class='diagonal'>-</td>"
             else:
                 key = sort_tuple((row_player, col_player))
                 cell_content = ""
+                cell_class = ""
                 if key in match_dict:
                     for match in match_dict[key]:
                         date, p1, p2, score1, score2 = (
@@ -127,12 +137,23 @@ def generate_match_html(match_log_data: list[dict]) -> str:
                         )
                         if row_player == p1:
                             score_display = f"{score1}-{score2}"
-                        else:
+                            if score1 > score2:
+                                cell_class = "win-cell"
+                            elif score1 < score2:
+                                cell_class = "loss-cell"
+                        else:  # row_player == p2
                             score_display = f"{score2}-{score1}"
-                        cell_content += f"<div class='date-text'>{date}</div><div class='score-text'>{score_display}</div>"
+                            if score2 > score1:
+                                cell_class = "win-cell"
+                            elif score2 < score1:
+                                cell_class = "loss-cell"
+                        formatted_date = format_date(
+                            date, format="MMM d", locale=Locale("en", "US")
+                        )
+                        cell_content += f"<div class='date-text'>{formatted_date}</div><div class='score-text'>{score_display}</div>"
                 else:
                     cell_content = "-"
-                html_content += f"<td>{cell_content}</td>"
+                html_content += f"<td class='{cell_class}'>{cell_content}</td>"
         html_content += "</tr>"
 
     html_content += """

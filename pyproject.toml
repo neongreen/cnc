@@ -3,4 +3,6 @@ name = "cnc"
 version = "0.1.0"
 description = ""
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "babel>=2.17.0",
+]
