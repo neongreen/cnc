@@ -122,10 +122,14 @@ export function drawGraph(graphData, graphHeight, levels) {
           // Calculate how many edges come out of the source node / into the target node
           const edges = graphData.edges
           console.log("Current edges:", edges)
-          const sourceEdges = edges.filter((e) => e.source === d.source)
-          console.log("Source edges for current edge:", sourceEdges)
-          const targetEdges = edges.filter((e) => e.target === d.target)
-          console.log("Target edges for current edge:", targetEdges)
+          const sourceEdges = edges
+            .filter((e) => e.source === d.source)
+            .sort((a, b) => a.target.y - b.target.y) // Sort by target node's y-coordinate
+          console.log("Source edges for current edge (sorted):", sourceEdges)
+          const targetEdges = edges
+            .filter((e) => e.target === d.target)
+            .sort((a, b) => b.source.y - a.source.y) // Sort by source node's y-coordinate
+          console.log("Target edges for current edge (sorted):", targetEdges)
           // Calculate the angles for the edge based on the number of edges
           const sourceIndex = sourceEdges.findIndex(
             (e) => e.target === d.target
