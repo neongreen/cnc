@@ -260,7 +260,20 @@ def generate_match_html(matches: list[MatchResult]) -> str:
         <thead>
             <tr>
                 <th></th>
-                {"".join(f"<th>{p.name}<br><small>W:{p.wins} L:{p.losses}</small></th>" for p in sorted_participants_stats)}
+    {
+        "".join(
+            f'''
+                <th>
+                    <div>{p.name}</div>
+                    <div>
+                      <small>W {p.wins}</small>
+                      <small style='margin-left: 0.25rem;'>L {p.losses}</small>
+                    </div>
+                </th>
+            '''
+            for p in sorted_participants_stats
+        )
+    }
             </tr>
         </thead>
         <tbody>
@@ -269,40 +282,34 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     for row_player in participants_list:
         table_content += f"<tr><th>{row_player}</th>"
         for col_player in participants_list:
-            if row_player == col_player:
-                table_content += "<td class='diagonal'>-</td>"
-            else:
-                key = sort_tuple((row_player, col_player))
-                cell_content = ""
-                cell_class = ""
-                if key in match_dict:
-                    for match in match_dict[key]:
-                        date, p1, p2, score1, score2 = (
-                            match.date,
-                            match.player1,
-                            match.player2,
+            key = sort_tuple((row_player, col_player))
+            cell_content = ""
+            cell_class = ""
+            if row_player != col_player and key in match_dict:
+                for match in match_dict[key]:
+                    if col_player == match.player1:
+                        col_player_score, row_player_score = (
                             match.score1,
                             match.score2,
                         )
-                        if col_player == p1:
-                            score_display = f"{score1}-{score2}"
-                            if score1 > score2:
-                                cell_class = "win-cell"
-                            elif score1 < score2:
-                                cell_class = "loss-cell"
-                        else:  # col_player == p2
-                            score_display = f"{score2}-{score1}"
-                            if score2 > score1:
-                                cell_class = "win-cell"
-                            elif score2 < score1:
-                                cell_class = "loss-cell"
-                        formatted_date = format_date(
-                            date, format="MMM d", locale=Locale("en", "US")
+                    else:
+                        col_player_score, row_player_score = (
+                            match.score2,
+                            match.score1,
                         )
-                        cell_content += f"<div class='date-text'>{formatted_date}</div><div class='score-text'>{score_display}</div>"
-                else:
-                    cell_content = "-"
-                table_content += f"<td class='{cell_class}'>{cell_content}</td>"
+                    cell_class = (
+                        "win-cell"
+                        if col_player_score > row_player_score
+                        else "loss-cell"
+                    )
+                    formatted_date = format_date(
+                        match.date, format="MMM d", locale=Locale("en", "US")
+                    )
+                    cell_content += f"""
+                        <div class='date-text'>{formatted_date}</div>
+                        <div class='score-text'>{col_player_score} – {row_player_score}</div>
+                    """
+            table_content += f"<td class='{cell_class}'>{cell_content}</td>"
         table_content += "</tr>"
 
     table_content += """
