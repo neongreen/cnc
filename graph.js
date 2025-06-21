@@ -108,10 +108,35 @@ export function drawGraph(graphData, graphHeight, levels) {
       return d3
         .linkHorizontal()
         .x((d) => d.x)
-        .y((d) => d.y)({
-        source: { x: d.source.x + radius, y: d.source.y },
-        target: { x: d.target.x - radius - arrowSize - 4, y: d.target.y },
-      })
+        .y((d) => d.y)(
+        (() => {
+          // Calculate how many edges come out of the source node / into the target node
+          const edges = graphData.edges
+          const sourceEdges = edges.filter((e) => e.source === d.source)
+          const targetEdges = edges.filter((e) => e.target === d.target)
+          // Calculate the angles for the edge based on the number of edges
+          const sourceIndex = sourceEdges.findIndex(
+            (e) => e.target === d.target
+          )
+          const targetIndex = targetEdges.findIndex(
+            (e) => e.source === d.source
+          )
+          const angle = (i, total) =>
+            (((i - (total - 1) / 2) / total) * Math.PI) / 2
+          const sourceAngle = angle(sourceIndex, sourceEdges.length)
+          const targetAngle = angle(targetIndex, targetEdges.length)
+          return {
+            source: {
+              x: d.source.x + radius * Math.cos(sourceAngle),
+              y: d.source.y + radius * Math.sin(sourceAngle),
+            },
+            target: {
+              x: d.target.x - (radius + arrowSize + 4) * Math.cos(targetAngle),
+              y: d.target.y - (radius + arrowSize + 4) * Math.sin(targetAngle),
+            },
+          }
+        })()
+      )
     })
 
   // Create nodes
