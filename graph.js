@@ -1,3 +1,31 @@
+/**
+ * @typedef {object} Node
+ * @property {string} id - The unique identifier for the node.
+ * @property {string} name - The name of the node.
+ * @property {number} x - The x-coordinate of the node.
+ * @property {number} y - The y-coordinate of the node.
+ * @property {number} fx - The fixed x-coordinate of the node.
+ * @property {number} fy - The fixed y-coordinate of the node.
+ */
+
+/**
+ * @typedef {object} Edge
+ * @property {string} source - The source node ID of the edge.
+ * @property {string} target - The target node ID of the edge.
+ */
+
+/**
+ * @typedef {object} GraphData
+ * @property {Array<Node>} nodes - An array of node objects.
+ * @property {Array<Edge>} edges - An array of edge objects.
+ */
+
+/**
+ * Draws a graph using D3.js.
+ * @param {GraphData} graphData - The graph data.
+ * @param {number} graphHeight - The height of the graph SVG.
+ * @param {Array<Array<string>>} levels - An array of arrays, where each inner array represents a level of nodes in the graph.
+ */
 function drawGraph(graphData, graphHeight, levels) {
   const svg = d3.select("#graph-svg")
   // width same as table width (determined dynamically), or viewport width, whichever is bigger
