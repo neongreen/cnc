@@ -146,7 +146,7 @@ def generate_match_html(match_log_data: list[dict]) -> str:
         <thead>
             <tr>
                 <th></th>
-                {"".join(f"<th>{p}</th>" for p in participants_list)}
+                {"".join(f"<th>{p.name}<br><small>W:{p.wins} L:{p.losses}</small></th>" for p in sorted_participants_stats)}
             </tr>
         </thead>
         <tbody>
