@@ -2,12 +2,13 @@
 # How to add dependencies: `uv add <dependency>`
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from babel.dates import format_date
 from babel.core import Locale
 from flask import Flask, render_template, send_from_directory
 import os
 import shutil
+import csv
 
 
 @dataclass
@@ -26,57 +27,20 @@ class MatchResult:
     score2: int
 
 
-def to_match_result(data: dict) -> MatchResult:
-    date = data["date"]
-    del data["date"]
-    p1, p2 = sorted(list(data.keys()))
-    return MatchResult(
-        date=date, player1=p1, player2=p2, score1=data[p1], score2=data[p2]
-    )
-
-
-MATCH_LOG: list[MatchResult] = [
-    to_match_result(x)
-    for x in [
-        {"date": date(2025, 6, 3), "sirius": 11, "chez": 1},
-        {"date": date(2025, 6, 3), "baltic": 12, "rick": 0},
-        {"date": date(2025, 6, 3), "beniu": 6, "nugget": 7},
-        {"date": date(2025, 6, 3), "apollix": 0, "sted": 12},
-        {"date": date(2025, 6, 4), "emily": 9, "sirius": 0},
-        {"date": date(2025, 6, 4), "kuyi": 11, "vivid": 0},
-        {"date": date(2025, 6, 4), "tamp": 3, "baltic": 8},
-        {"date": date(2025, 6, 4), "blunderer": 0, "sealand": 10},
-        {"date": date(2025, 6, 4), "kan": 0, "nugget": 9},
-        {"date": date(2025, 6, 4), "kk": 3, "ral": 5},
-        {"date": date(2025, 6, 4), "silvy": 1, "sted": 8},
-        {"date": date(2025, 6, 4), "hayden": 8, "erix": 2},
-        {"date": date(2025, 6, 5), "emily": 4, "kuyi": 6},
-        {"date": date(2025, 6, 5), "baltic": 6, "sealand": 3},
-        {"date": date(2025, 6, 5), "nugget": 7, "ral": 3},
-        {"date": date(2025, 6, 5), "sted": 8, "hayden": 2},
-        {"date": date(2025, 6, 6), "kuyi": 2, "baltic": 11},
-        {"date": date(2025, 6, 6), "nugget": 1, "sted": 12},
-        {"date": date(2025, 6, 8), "baltic": 8, "sted": 2},
-        {"date": date(2025, 6, 9), "kuyi": 9, "nugget": 1},
-        {"date": date(2025, 6, 15), "beniu": 11, "apollix": 0},
-        {"date": date(2025, 6, 15), "tamp": 14, "silvy": 0},
-        {"date": date(2025, 6, 15), "rick": 3, "blunderer": 8},
-        {"date": date(2025, 6, 15), "kan": 1, "silvy": 11},
-        {"date": date(2025, 6, 16), "garry": 5, "baltic": 6},
-        {"date": date(2025, 6, 16), "vivid": 0, "silvy": 13},
-        {"date": date(2025, 6, 16), "kk": 2, "rick": 12},
-        {"date": date(2025, 6, 16), "kan": 3, "apollix": 11},
-        {"date": date(2025, 6, 17), "garry": 7, "sted": 4},
-        {"date": date(2025, 6, 17), "vivid": 10, "kan": 3},
-        {"date": date(2025, 6, 17), "rick": 10, "chez": 1},
-        {"date": date(2025, 6, 17), "kk": 5, "erix": 6},
-        {"date": date(2025, 6, 19), "tamp": 9, "emily": 3},
-        {"date": date(2025, 6, 19), "sealand": 10, "garry": 2},
-        {"date": date(2025, 6, 19), "ral": 3, "beniu": 8},
-        {"date": date(2025, 6, 19), "bakel": 8, "no one": 1},
-        {"date": date(2025, 6, 19), "kk": 8, "chez": 3},
+def load_match_data(file_path: str) -> list[MatchResult]:
+    with open(file_path, "r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    return [
+        MatchResult(
+            date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
+            player1=row["player1"],
+            player2=row["player2"],
+            score1=int(row["score1"]),
+            score2=int(row["score2"]),
+        )
+        for row in rows
     ]
-]
 
 
 def sort_tuple(t: tuple[str, str]) -> tuple[str, str]:
@@ -342,7 +306,8 @@ def generate_match_html(matches: list[MatchResult]) -> str:
 
 def build():
     """Build the static files for the web app."""
-    html_output = generate_match_html(MATCH_LOG)
+    matches = load_match_data(os.path.join(os.path.dirname(__file__), "match_data.csv"))
+    html_output = generate_match_html(matches)
     output_dir = "build"
     os.makedirs(output_dir, exist_ok=True)
     shutil.copyfile("graph.js", os.path.join(output_dir, "graph.js"))
