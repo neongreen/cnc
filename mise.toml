@@ -4,7 +4,7 @@ uv = "latest"
 [tasks.dev]
 description = "Start a dev server"
 quiet = true
-run = "uv run flask run --debug -h 0.0.0.0 -p 5500 --extra-files=./templates/index.html.j2:./graph.js"
+run = "uv run flask run --debug -h 0.0.0.0 -p 5500 --extra-files=./templates/index.html.j2:./graph.js:match_data.csv"
 
 [tasks.build]
 description = "Build static files without starting the server"
