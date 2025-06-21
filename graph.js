@@ -30,6 +30,7 @@ import * as d3 from "https://esm.sh/d3"
  */
 
 export function drawGraph(graphData, graphHeight, levels) {
+  console.log("drawGraph called with:", { graphData, graphHeight, levels })
   const svg = d3.select("#graph-svg")
   // width same as table width (determined dynamically), or viewport width, whichever is bigger
   const width = Math.max(
@@ -37,6 +38,7 @@ export function drawGraph(graphData, graphHeight, levels) {
     window.innerWidth - 40
   )
   const height = graphHeight
+  console.log("SVG dimensions:", { width, height })
 
   // Set SVG dimensions explicitly and ensure the element itself can extend
   // beyond the viewport when needed.
@@ -65,6 +67,7 @@ export function drawGraph(graphData, graphHeight, levels) {
 
   // Position nodes in hierarchical layout based on topological levels
   const nodePositions = new Map()
+  console.log("Calculating node positions...")
 
   levels.forEach((level, levelIndex) => {
     const x = (levelIndex + 1) * (width / (levels.length + 1))
@@ -75,6 +78,7 @@ export function drawGraph(graphData, graphHeight, levels) {
   })
 
   // Set fixed positions for nodes
+  console.log("Setting fixed positions for nodes...")
   graphData.nodes.forEach((node) => {
     const pos = nodePositions.get(node.id)
     if (pos) {
@@ -99,6 +103,7 @@ export function drawGraph(graphData, graphHeight, levels) {
     .stop() // Don't run the simulation, we have fixed positions
 
   // Create edges
+  console.log("Creating edges...")
   svg
     .append("g")
     .selectAll("path")
@@ -116,19 +121,26 @@ export function drawGraph(graphData, graphHeight, levels) {
         (() => {
           // Calculate how many edges come out of the source node / into the target node
           const edges = graphData.edges
+          console.log("Current edges:", edges)
           const sourceEdges = edges.filter((e) => e.source === d.source)
+          console.log("Source edges for current edge:", sourceEdges)
           const targetEdges = edges.filter((e) => e.target === d.target)
+          console.log("Target edges for current edge:", targetEdges)
           // Calculate the angles for the edge based on the number of edges
           const sourceIndex = sourceEdges.findIndex(
             (e) => e.target === d.target
           )
+          console.log("Source index:", sourceIndex)
           const targetIndex = targetEdges.findIndex(
             (e) => e.source === d.source
           )
+          console.log("Target index:", targetIndex)
           const angle = (i, total) =>
             (((i - (total - 1) / 2) / total) * Math.PI) / 2
           const sourceAngle = angle(sourceIndex, sourceEdges.length)
+          console.log("Source angle:", sourceAngle)
           const targetAngle = angle(targetIndex, targetEdges.length)
+          console.log("Target angle:", targetAngle)
           return {
             source: {
               x: d.source.x + radius * Math.cos(sourceAngle),
@@ -144,6 +156,7 @@ export function drawGraph(graphData, graphHeight, levels) {
     })
 
   // Create nodes
+  console.log("Creating nodes...")
   const node = svg
     .append("g")
     .selectAll("circle")
@@ -154,6 +167,7 @@ export function drawGraph(graphData, graphHeight, levels) {
     .attr("r", radius)
 
   // Add node labels
+  console.log("Adding node labels...")
   const nodeText = svg
     .append("g")
     .selectAll("text")
