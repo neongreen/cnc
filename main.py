@@ -14,47 +14,6 @@ class ParticipantStats:
     losses: int
 
 
-MATCH_LOG = [
-    {"date": date(2025, 6, 3), "sirius": 11, "chez": 1},
-    {"date": date(2025, 6, 3), "baltic": 12, "rick": 0},
-    {"date": date(2025, 6, 3), "beniu": 6, "nugget": 7},
-    {"date": date(2025, 6, 3), "apollix": 0, "sted": 12},
-    {"date": date(2025, 6, 4), "emily": 9, "sirius": 0},
-    {"date": date(2025, 6, 4), "kuyi": 11, "vivid": 0},
-    {"date": date(2025, 6, 4), "tamp": 3, "baltic": 8},
-    {"date": date(2025, 6, 4), "blunderer": 0, "sealand": 10},
-    {"date": date(2025, 6, 4), "kan": 0, "nugget": 9},
-    {"date": date(2025, 6, 4), "kk": 3, "ral": 5},
-    {"date": date(2025, 6, 4), "silvy": 1, "sted": 8},
-    {"date": date(2025, 6, 4), "hayden": 8, "erix": 2},
-    {"date": date(2025, 6, 5), "emily": 4, "kuyi": 6},
-    {"date": date(2025, 6, 5), "baltic": 6, "sealand": 3},
-    {"date": date(2025, 6, 5), "nugget": 7, "ral": 3},
-    {"date": date(2025, 6, 5), "sted": 8, "hayden": 2},
-    {"date": date(2025, 6, 6), "kuyi": 2, "baltic": 11},
-    {"date": date(2025, 6, 6), "nugget": 1, "sted": 12},
-    {"date": date(2025, 6, 8), "baltic": 8, "sted": 2},
-    {"date": date(2025, 6, 9), "kuyi": 9, "nugget": 1},
-    {"date": date(2025, 6, 15), "beniu": 11, "apollix": 0},
-    {"date": date(2025, 6, 15), "tamp": 14, "silvy": 0},
-    {"date": date(2025, 6, 15), "rick": 3, "blunderer": 8},
-    {"date": date(2025, 6, 15), "kan": 1, "silvy": 11},
-    {"date": date(2025, 6, 16), "garry": 5, "baltic": 6},
-    {"date": date(2025, 6, 16), "vivid": 0, "silvy": 13},
-    {"date": date(2025, 6, 16), "kk": 2, "rick": 12},
-    {"date": date(2025, 6, 16), "kan": 3, "apollix": 11},
-    {"date": date(2025, 6, 17), "garry": 7, "sted": 4},
-    {"date": date(2025, 6, 17), "vivid": 10, "kan": 3},
-    {"date": date(2025, 6, 17), "rick": 10, "chez": 1},
-    {"date": date(2025, 6, 17), "kk": 5, "erix": 6},
-    {"date": date(2025, 6, 19), "tamp": 9, "emily": 3},
-    {"date": date(2025, 6, 19), "sealand": 10, "garry": 2},
-    {"date": date(2025, 6, 19), "ral": 3, "beniu": 8},
-    {"date": date(2025, 6, 19), "bakel": 8, "no one": 1},
-    {"date": date(2025, 6, 19), "kk": 8, "chez": 3},
-]
-
-
 @dataclass
 class MatchResult:
     date: date
@@ -62,6 +21,59 @@ class MatchResult:
     player2: str
     score1: int
     score2: int
+
+
+def to_match_result(data: dict) -> MatchResult:
+    date = data["date"]
+    del data["date"]
+    p1, p2 = sorted(list(data.keys()))
+    return MatchResult(
+        date=date, player1=p1, player2=p2, score1=data[p1], score2=data[p2]
+    )
+
+
+MATCH_LOG: list[MatchResult] = [
+    to_match_result(x)
+    for x in [
+        {"date": date(2025, 6, 3), "sirius": 11, "chez": 1},
+        {"date": date(2025, 6, 3), "baltic": 12, "rick": 0},
+        {"date": date(2025, 6, 3), "beniu": 6, "nugget": 7},
+        {"date": date(2025, 6, 3), "apollix": 0, "sted": 12},
+        {"date": date(2025, 6, 4), "emily": 9, "sirius": 0},
+        {"date": date(2025, 6, 4), "kuyi": 11, "vivid": 0},
+        {"date": date(2025, 6, 4), "tamp": 3, "baltic": 8},
+        {"date": date(2025, 6, 4), "blunderer": 0, "sealand": 10},
+        {"date": date(2025, 6, 4), "kan": 0, "nugget": 9},
+        {"date": date(2025, 6, 4), "kk": 3, "ral": 5},
+        {"date": date(2025, 6, 4), "silvy": 1, "sted": 8},
+        {"date": date(2025, 6, 4), "hayden": 8, "erix": 2},
+        {"date": date(2025, 6, 5), "emily": 4, "kuyi": 6},
+        {"date": date(2025, 6, 5), "baltic": 6, "sealand": 3},
+        {"date": date(2025, 6, 5), "nugget": 7, "ral": 3},
+        {"date": date(2025, 6, 5), "sted": 8, "hayden": 2},
+        {"date": date(2025, 6, 6), "kuyi": 2, "baltic": 11},
+        {"date": date(2025, 6, 6), "nugget": 1, "sted": 12},
+        {"date": date(2025, 6, 8), "baltic": 8, "sted": 2},
+        {"date": date(2025, 6, 9), "kuyi": 9, "nugget": 1},
+        {"date": date(2025, 6, 15), "beniu": 11, "apollix": 0},
+        {"date": date(2025, 6, 15), "tamp": 14, "silvy": 0},
+        {"date": date(2025, 6, 15), "rick": 3, "blunderer": 8},
+        {"date": date(2025, 6, 15), "kan": 1, "silvy": 11},
+        {"date": date(2025, 6, 16), "garry": 5, "baltic": 6},
+        {"date": date(2025, 6, 16), "vivid": 0, "silvy": 13},
+        {"date": date(2025, 6, 16), "kk": 2, "rick": 12},
+        {"date": date(2025, 6, 16), "kan": 3, "apollix": 11},
+        {"date": date(2025, 6, 17), "garry": 7, "sted": 4},
+        {"date": date(2025, 6, 17), "vivid": 10, "kan": 3},
+        {"date": date(2025, 6, 17), "rick": 10, "chez": 1},
+        {"date": date(2025, 6, 17), "kk": 5, "erix": 6},
+        {"date": date(2025, 6, 19), "tamp": 9, "emily": 3},
+        {"date": date(2025, 6, 19), "sealand": 10, "garry": 2},
+        {"date": date(2025, 6, 19), "ral": 3, "beniu": 8},
+        {"date": date(2025, 6, 19), "bakel": 8, "no one": 1},
+        {"date": date(2025, 6, 19), "kk": 8, "chez": 3},
+    ]
+]
 
 
 def sort_tuple(t: tuple[str, str]) -> tuple[str, str]:
@@ -92,23 +104,20 @@ def calculate_participant_stats(
     return sorted_stats
 
 
-def get_match_outcomes(match_log_data: list[dict]) -> list[tuple[str, str]]:
+def get_match_outcomes(matches: list[MatchResult]) -> list[tuple[str, str]]:
+    """Extract match outcomes as tuples of (winner, loser). If a match is a draw, it is ignored."""
     outcomes = []
-    for match in match_log_data:
-        players = [key for key in match.keys() if key != "date"]
-        if len(players) == 2:
-            p1, p2 = players
-            score1, score2 = match[p1], match[p2]
-            if score1 > score2:
-                outcomes.append((p1, p2))
-            elif score1 < score2:
-                outcomes.append((p2, p1))
+    for match in matches:
+        if match.score1 > match.score2:
+            outcomes.append((match.player1, match.player2))
+        elif match.score1 < match.score2:
+            outcomes.append((match.player2, match.player1))
     return outcomes
 
 
 def topological_sort_participants(
     outcomes: list[tuple[str, str]], participants: set[str]
-) -> tuple[str, list[list[str]]]:
+) -> list[list[str]]:
     from graphlib import TopologicalSorter
 
     # Build the graph for TopologicalSorter
@@ -204,28 +213,17 @@ def topological_sort_participants(
             # If no nodes are ready but the sorter is still active, we have a cycle
             break
 
-    return " > ".join(result_parts), levels
+    return levels
 
 
-def generate_match_html(match_log_data: list[dict]) -> str:
+def generate_match_html(matches: list[MatchResult]) -> str:
     # Create a dictionary to store match data for quick lookup
     match_dict: dict[tuple[str, str], list[MatchResult]] = {}
-    for match in match_log_data:
-        players: list[str] = [key for key in match.keys() if key != "date"]
-        if len(players) == 2:
-            p1, p2 = players
-            key = sort_tuple((p1, p2))
-            if key not in match_dict:
-                match_dict[key] = []
-            match_dict[key].append(
-                MatchResult(
-                    date=match["date"],
-                    player1=p1,
-                    player2=p2,
-                    score1=match[p1],
-                    score2=match[p2],
-                )
-            )
+    for match in matches:
+        key = sort_tuple((match.player1, match.player2))
+        if key not in match_dict:
+            match_dict[key] = []
+        match_dict[key].append(match)
 
     # Extract unique participants
     participants: set[str] = set()
@@ -236,10 +234,8 @@ def generate_match_html(match_log_data: list[dict]) -> str:
     participants_list = [p.name for p in sorted_participants_stats]
 
     # Generate topological sort string and levels
-    outcomes = get_match_outcomes(match_log_data)
-    topological_order_str, levels = topological_sort_participants(
-        outcomes, participants
-    )
+    outcomes = get_match_outcomes(matches)
+    levels = topological_sort_participants(outcomes, participants)
     del participants  # No longer needed after this point
 
     html_content: str = f"""
@@ -288,7 +284,6 @@ def generate_match_html(match_log_data: list[dict]) -> str:
         .edge {{
             stroke: #666;
             stroke-width: 2px;
-            marker-end: url(#arrowhead);
         }}
         .edge-label {{
             font-family: sans-serif;
@@ -381,19 +376,6 @@ def generate_match_html(match_log_data: list[dict]) -> str:
         // Set SVG dimensions explicitly
         svg.attr("width", width).attr("height", height);
 
-        // Create arrow marker
-        svg.append("defs").append("marker")
-            .attr("id", "arrowhead")
-            .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 25)
-            .attr("refY", 0)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto")
-            .append("path")
-            .attr("d", "M0,-5L10,0L0,5")
-            .attr("fill", "#666");
-        
         // Position nodes in hierarchical layout based on topological levels
         const levels = {json.dumps(levels)};
         const nodePositions = new Map();
@@ -435,11 +417,7 @@ def generate_match_html(match_log_data: list[dict]) -> str:
             .data(graphData.nodes)
             .enter().append("circle")
             .attr("class", "node")
-            .attr("r", 20)
-            .call(d3.drag()
-                .on("start", dragstarted)
-                .on("drag", dragged)
-                .on("end", dragended));
+            .attr("r", 30);
         
         // Add node labels
         const nodeText = svg.append("g")
@@ -471,24 +449,6 @@ def generate_match_html(match_log_data: list[dict]) -> str:
         
         // Trigger initial render
         updatePositions();
-        
-        // Drag functions
-        function dragstarted(event, d) {{
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-        }}
-        
-        function dragged(event, d) {{
-            d.fx = event.x;
-            d.fy = event.y;
-        }}
-        
-        function dragended(event, d) {{
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
-        }}
     </script>
     """
 
