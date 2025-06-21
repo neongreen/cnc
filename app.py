@@ -244,7 +244,9 @@ def generate_match_html(matches: list[MatchResult]) -> str:
             key = sort_tuple((row_player, col_player))
             cell_content = ""
             cell_class = ""
-            if row_player != col_player and key in match_dict:
+            if row_player == col_player:
+                cell_class = "self-match-cell"
+            elif key in match_dict:
                 for match in match_dict[key]:
                     if col_player == match.player1:
                         col_player_score, row_player_score = (
