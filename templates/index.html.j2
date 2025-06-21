@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Maturity elo</title>
+  <title>Maturity ELO</title>
   <style>
     html {
       font-size: 14px;
@@ -52,24 +52,10 @@
       background-color: #f8d7da;
     }
 
-    /* Graph styles */
-    .graph-container {
-      margin: 20px 0;
-      border: 1px solid #ddd;
-      padding: 20px;
-      background-color: #fafafa;
-    }
-
     #graph-svg {
       width: 100%;
 
-      height: {
-          {
-          graph_height
-        }
-      }
-
-      px;
+      height: "{{ graph_height }}px";
       border: 1px solid #ccc;
     }
 
@@ -103,13 +89,18 @@
 </head>
 
 <body>
+  <h1>Maturity ELO</h1>
+  <p>
+    Source on GitHub:
+    <a href="https://github.com/neongreen/cnc" target="_blank">neongreen/cnc</a>
+  </p>
+
+  <h2>Matches</h2>
   {{ table_content | safe }}
 
-  <div class="graph-container">
-    <h2>Match outcomes graph</h2>
-    <p>An arrow from A to B means A beat B in a match.</p>
-    <svg id="graph-svg"></svg>
-  </div>
+  <h2>Match outcomes graph</h2>
+  <p>An arrow from A to B means A beat B in a match.</p>
+  <svg id="graph-svg"></svg>
 
   <script type="module">
     import { drawGraph } from './graph.js';
