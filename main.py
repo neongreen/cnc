@@ -482,11 +482,15 @@ def generate_match_html(matches: list[MatchResult]) -> str:
 
 if __name__ == "__main__":
     import os
-    import tempfile
 
     html_output = generate_match_html(MATCH_LOG)
-    temp_dir = tempfile.gettempdir()
-    output_path = os.path.join(temp_dir, "matches.html")
+
+    output_dir = "build"
+    os.makedirs(
+        output_dir, exist_ok=True
+    )  # Create the build directory if it doesn't exist
+
+    output_path = os.path.join(output_dir, "index.html")
     with open(output_path, "w") as f:
         f.write(html_output)
 
