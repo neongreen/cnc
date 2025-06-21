@@ -129,12 +129,13 @@ def generate_match_html(match_log_data: list[dict]) -> str:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maturity elo</title>
     <style>
+        html {{ font-size: 12px; }}
         body {{ font-family: sans-serif; margin: 20px; }}
         table {{ width: auto; border-collapse: collapse; margin-top: 20px; }}
-        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: center; min-width: 60px; }}
-        th {{ background-color: #f2f2f2; font-weight: bold; }}
-        .date-text {{ color: gray; font-size: small; }}
-        .score-text {{ font-size: medium; }}
+        th, td {{ border: 1px solid #ddd; padding: 0.25rem 0.5rem; text-align: center; min-width: 4rem; }}
+        th {{ background-color: #f2f2f2; font-weight: bold; font-size: 1rem; }}
+        .date-text {{ color: gray; font-size: 0.75rem; }}
+        .score-text {{ font-size: 1rem; }}
         td.diagonal {{ background-color: #f9f9f9; }}
         .win-cell {{ background-color: #d4edda; }} /* Light green */
         .loss-cell {{ background-color: #f8d7da; }} /* Light red */
