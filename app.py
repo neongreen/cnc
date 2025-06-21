@@ -132,7 +132,6 @@ def topological_sort_participants(
 
     # Use TopologicalSorter with batch processing, but group only truly equivalent nodes
     ts = TopologicalSorter(graph)
-    result_parts = []
     levels = []  # Store the levels for graph visualization
     ts.prepare()
 
@@ -172,10 +171,6 @@ def topological_sort_participants(
             # Sort groups by their first element (player name) for consistent ordering
             for group in sorted(groups, key=lambda x: x[0]):
                 level_groups.extend(group)
-                if len(group) == 1:
-                    result_parts.append(group[0])
-                else:
-                    result_parts.append("{" + ", ".join(group) + "}")
 
             levels.append(level_groups)
 
