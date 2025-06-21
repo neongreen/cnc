@@ -1,4 +1,4 @@
-# How to run: `uv run flask run --debug`
+# How to run: `uv run flask run --debug -h 0.0.0.0 -p 5500`
 # How to add dependencies: `uv add <dependency>`
 
 from dataclasses import dataclass
