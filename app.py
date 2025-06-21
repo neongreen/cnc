@@ -258,7 +258,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
                         )
                     cell_class = (
                         "win-cell"
-                        if col_player_score > row_player_score
+                        if row_player_score > col_player_score
                         else "loss-cell"
                     )
                     formatted_date = format_date(
@@ -266,7 +266,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
                     )
                     cell_content += f"""
                         <div class='date-text'>{formatted_date}</div>
-                        <div class='score-text'>{col_player_score} – {row_player_score}</div>
+                        <div class='score-text'>{row_player_score} – {col_player_score}</div>
                     """
             table_content += f"<td class='{cell_class}'>{cell_content}</td>"
         table_content += "</tr>"

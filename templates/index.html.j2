@@ -96,10 +96,16 @@
   </p>
 
   <h2>Matches</h2>
+  <p>Scores are given for <i>row player – column player</i>.</p>
   {{ table_content | safe }}
 
   <h2>Match outcomes graph</h2>
-  <p>An arrow from A to B means A beat B in a match.</p>
+  <p>
+    An arrow from A to B means A beat B in a match.
+  </p>
+  <p>
+    The graph is sorted in topological order.
+  </p>
   <svg id="graph-svg"></svg>
 
   <script type="module">

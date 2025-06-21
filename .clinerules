@@ -1,0 +1,3 @@
+How to build the static site: see `mise.toml` for the build command
+
+How to run the site locally: again, see `mise.toml` for the command
