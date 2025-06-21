@@ -210,6 +210,17 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     # Generate topological sort string and levels
     outcomes = get_match_outcomes(matches)
     levels = topological_sort_participants(outcomes, participants)
+    num_participants = len(participants)
+    total_possible_pairings = (
+        num_participants * (num_participants - 1) / 2 if num_participants > 1 else 0
+    )
+    matches_done = len(matches)
+    completion_rate = (
+        (matches_done / total_possible_pairings) * 100
+        if total_possible_pairings > 0
+        else 0
+    )
+
     del participants  # No longer needed after this point
 
     graph_height = 800
@@ -222,13 +233,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     {
         "".join(
             f'''
-                <th>
-                    <div>{p.name}</div>
-                    <div>
-                      <small>W {p.wins}</small>
-                      <small style='margin-left: 0.25rem;'>L {p.losses}</small>
-                    </div>
-                </th>
+                <th>{p.name}</th>
             '''
             for p in sorted_participants_stats
         )
@@ -238,8 +243,18 @@ def generate_match_html(matches: list[MatchResult]) -> str:
         <tbody>
     """
 
-    for row_player in participants_list:
-        table_content += f"<tr><th>{row_player}</th>"
+    for row_player_stats in sorted_participants_stats:
+        row_player = row_player_stats.name
+        table_content += f"""
+            <tr>
+                <th>
+                    <div>{row_player}</div>
+                    <div>
+                      <small>W {row_player_stats.wins}</small>
+                      <small style='margin-left: 0.25rem;'>L {row_player_stats.losses}</small>
+                    </div>
+                </th>
+        """
         for col_player in participants_list:
             key = sort_tuple((row_player, col_player))
             cell_content = ""
@@ -298,6 +313,10 @@ def generate_match_html(matches: list[MatchResult]) -> str:
         graph_data=json.dumps(graph_data),
         levels_data=json.dumps(levels),
         graph_height=graph_height,
+        matches_done=matches_done,
+        total_possible_pairings=int(total_possible_pairings),
+        completion_rate=f"{completion_rate:.2f}",
+        num_participants=num_participants,
     )
 
 

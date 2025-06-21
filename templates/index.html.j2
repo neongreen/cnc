@@ -101,6 +101,10 @@
 
   <h2>Matches</h2>
   <p>Scores are given for <i>row player – column player</i>.</p>
+  <p>Total players: {{ num_participants }}</p>
+  <p>
+    Completion rate: {{ matches_done }} / {{ total_possible_pairings }} pairings ({{ completion_rate }}% done)
+  </p>
   {{ table_content | safe }}
 
   <h2>Match outcomes graph</h2>
