@@ -56,19 +56,12 @@
       background-color: #ddd;
     }
 
-    :root {
-      --stroke-color: #1976d2;
-    }
-
-
     #graph-svg {
       height: "{{ graph_height }}px";
       border: 1px solid #ccc;
     }
 
     .node {
-      fill: #e3f2fd;
-      stroke: var(--stroke-color);
       stroke-width: 2px;
       opacity: 0.5;
     }
@@ -87,14 +80,8 @@
 
     .edge {
       fill: none;
-      stroke: var(--stroke-color);
       opacity: 0.5;
       stroke-width: 2px;
-      marker-end: url(#arrowhead);
-    }
-
-    .arrowhead {
-      fill: var(--stroke-color);
     }
 
     .pear-link {

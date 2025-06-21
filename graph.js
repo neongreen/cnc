@@ -30,6 +30,20 @@ import * as d3 from "https://esm.sh/d3"
  */
 
 export function drawGraph(graphData, graphHeight, levels) {
+  // Helper function to darken a hex color
+  function darkenColor(hex, percent) {
+    let f = parseInt(hex.slice(1), 16),
+      R = f >> 16,
+      G = (f >> 8) & 0x00ff,
+      B = f & 0x0000ff
+
+    R = Math.round(R * (1 - percent))
+    G = Math.round(G * (1 - percent))
+    B = Math.round(B * (1 - percent))
+
+    return "#" + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)
+  }
+
   console.log("drawGraph called with:", { graphData, graphHeight, levels })
   const svg = d3.select("#graph-svg")
   // width same as table width (determined dynamically), or viewport width, whichever is bigger
@@ -50,23 +64,42 @@ export function drawGraph(graphData, graphHeight, levels) {
   const radius = 30 // Radius for nodes
   const arrowSize = 5 // Size of the arrow marker
 
-  // Create arrow marker
-  svg
-    .append("defs")
-    .append("marker")
-    .attr("id", "arrowhead")
-    .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 0)
-    .attr("refY", 0)
-    .attr("markerWidth", arrowSize)
-    .attr("markerHeight", arrowSize)
-    .attr("orient", "auto")
-    .append("path")
-    .attr("class", "arrowhead")
-    .attr("d", "M0,-5L10,0L0,5")
+  // Function to create a unique arrowhead for each link
+  function createArrowhead(id, color) {
+    svg
+      .append("defs")
+      .append("marker")
+      .attr("id", id)
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 0)
+      .attr("refY", 0)
+      .attr("markerWidth", arrowSize)
+      .attr("markerHeight", arrowSize)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("class", "arrowhead")
+      .attr("fill", color) // Set fill color directly
+      .attr("opacity", 1) // Ensure arrowhead is fully opaque
+      .attr("d", "M0,-5L10,0L0,5")
+    console.log(`Created arrowhead: ID=${id}, Color=${color}`)
+  }
 
   // Position nodes in hierarchical layout based on topological levels
   const nodePositions = new Map()
+  const nodeColors = new Map()
+  const colorPalette = [
+    "#a72751", // reddish
+    "#ff3d3d", // red
+    "#ffb72a", // orange
+    "#4bde3c", // green
+    "#33766c", // dark teal
+    "#25bfe2", // light blue
+    "#317de9", // blue
+    "#4a3c95", // purple
+    "#a55b99", // pink/purple
+    "#fe827d", // light red/orange
+    "#fed0b1", // light orange/peach
+  ]
   console.log("Calculating node positions...")
 
   levels.forEach((level, levelIndex) => {
@@ -74,6 +107,7 @@ export function drawGraph(graphData, graphHeight, levels) {
     level.forEach((nodeName, nodeIndex) => {
       const y = (nodeIndex + 1) * (height / (level.length + 1))
       nodePositions.set(nodeName, { x, y })
+      nodeColors.set(nodeName, colorPalette[levelIndex % colorPalette.length])
     })
   })
 
@@ -90,8 +124,7 @@ export function drawGraph(graphData, graphHeight, levels) {
   })
 
   // Create a simple simulation just for the links
-  const simulation = d3
-    .forceSimulation(graphData.nodes)
+  d3.forceSimulation(graphData.nodes)
     .force(
       "link",
       d3
@@ -104,6 +137,17 @@ export function drawGraph(graphData, graphHeight, levels) {
 
   // Create edges
   console.log("Creating edges...")
+
+  // Create arrowheads for each edge
+  graphData.edges.forEach((edge) => {
+    const linkColor = darkenColor(nodeColors.get(edge.source.id), 0.2)
+    const arrowheadId = `arrowhead-${edge.index}`
+    console.log(
+      `Processing edge: Source=${edge.source.id}, Target=${edge.target.id}, Arrowhead ID=${arrowheadId}`
+    )
+    createArrowhead(arrowheadId, linkColor)
+  })
+
   svg
     .append("g")
     .selectAll("path")
@@ -111,7 +155,8 @@ export function drawGraph(graphData, graphHeight, levels) {
     .enter()
     .append("path")
     .attr("class", "edge")
-    .attr("marker-end", "url(#arrowhead)") // Add marker to the end of the path
+    .attr("stroke", (d) => darkenColor(nodeColors.get(d.source.id), 0.2)) // Set stroke color based on source node, darkened
+    .attr("marker-end", (d) => `url(#arrowhead-${d.index})`) // Add unique marker to the end of the path
     .attr("d", (d) => {
       // Adjust target point to end at the circle's edge
       return d3
@@ -121,7 +166,6 @@ export function drawGraph(graphData, graphHeight, levels) {
         (() => {
           // Calculate how many edges come out of the source node / into the target node
           const edges = graphData.edges
-          console.log("Current edges:", edges)
           const sourceEdges = edges
             .filter((e) => e.source === d.source)
             .sort((a, b) => a.target.y - b.target.y) // Sort by target node's y-coordinate
@@ -145,15 +189,20 @@ export function drawGraph(graphData, graphHeight, levels) {
           console.log("Source angle:", sourceAngle)
           const targetAngle = angle(targetIndex, targetEdges.length)
           console.log("Target angle:", targetAngle)
+          const calculatedSource = {
+            x: d.source.x + radius * Math.cos(sourceAngle),
+            y: d.source.y + radius * Math.sin(sourceAngle),
+          }
+          const calculatedTarget = {
+            x: d.target.x - (radius + arrowSize + 4) * Math.cos(targetAngle),
+            y: d.target.y - (radius + arrowSize + 4) * Math.sin(targetAngle),
+          }
+          console.log(
+            `Edge path coordinates: Source=(${calculatedSource.x}, ${calculatedSource.y}), Target=(${calculatedTarget.x}, ${calculatedTarget.y})`
+          )
           return {
-            source: {
-              x: d.source.x + radius * Math.cos(sourceAngle),
-              y: d.source.y + radius * Math.sin(sourceAngle),
-            },
-            target: {
-              x: d.target.x - (radius + arrowSize + 4) * Math.cos(targetAngle),
-              y: d.target.y - (radius + arrowSize + 4) * Math.sin(targetAngle),
-            },
+            source: calculatedSource,
+            target: calculatedTarget,
           }
         })()
       )
@@ -169,6 +218,8 @@ export function drawGraph(graphData, graphHeight, levels) {
     .append("circle")
     .attr("class", "node")
     .attr("r", radius)
+    .attr("fill", (d) => nodeColors.get(d.id)) // Set fill color based on node's level
+    .attr("stroke", (d) => darkenColor(nodeColors.get(d.id), 0.2)) // Set stroke color to a darker version of fill
 
   // Add node labels
   console.log("Adding node labels...")
