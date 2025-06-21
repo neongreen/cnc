@@ -102,8 +102,8 @@ def calculate_participant_stats(
                 stats[p1].losses += 1
                 stats[p2].wins += 1
 
-    # Sort participants: highest wins first, then highest losses last
-    sorted_stats = sorted(stats.values(), key=lambda x: (-x.wins, x.losses))
+    # Sort participants: highest wins first, then highest losses last, then by name
+    sorted_stats = sorted(stats.values(), key=lambda x: (-x.wins, x.losses, x.name))
     return sorted_stats
 
 
@@ -154,12 +154,14 @@ def topological_sort_participants(
                 return True
 
             # Add all nodes that depend on current (reverse direction)
-            for node in graph:
+            for node in sorted(graph.keys()):  # Sort keys for deterministic iteration
                 if current in graph[node]:
                     stack.append(node)
 
             # Add all nodes that current depends on
-            for dep in graph.get(current, []):
+            for dep in sorted(
+                list(graph.get(current, []))
+            ):  # Sort dependencies for deterministic iteration
                 stack.append(dep)
 
         return False
@@ -172,7 +174,7 @@ def topological_sort_participants(
 
     while ts.is_active():
         # Get nodes that are ready to be processed (no remaining dependencies)
-        ready_nodes = ts.get_ready()
+        ready_nodes = sorted(list(ts.get_ready()))  # Sort ready nodes alphabetically
         if ready_nodes:
             # Group nodes that have no path between them
             groups = []
@@ -197,11 +199,14 @@ def topological_sort_participants(
                     else:
                         i += 1
 
-                groups.append(sorted(current_group))
+                groups.append(
+                    sorted(current_group)
+                )  # Ensure group is sorted alphabetically
 
             # Add groups to result and levels
             level_groups = []
-            for group in sorted(groups):  # Sort groups for consistency
+            # Sort groups by their first element (player name) for consistent ordering
+            for group in sorted(groups, key=lambda x: x[0]):
                 level_groups.extend(group)
                 if len(group) == 1:
                     result_parts.append(group[0])
@@ -216,6 +221,7 @@ def topological_sort_participants(
             # If no nodes are ready but the sorter is still active, we have a cycle
             break
 
+    print("Topologically sorted:", " ".join([f"{{{', '.join(x)}}}" for x in levels]))
     return levels
 
 
@@ -234,6 +240,12 @@ def generate_match_html(matches: list[MatchResult]) -> str:
         participants.update([p1, p2])
 
     sorted_participants_stats = calculate_participant_stats(match_dict, participants)
+    print(
+        "Players:",
+        ", ".join(
+            [f"{p.name} W:{p.wins} L:{p.losses}" for p in sorted_participants_stats]
+        ),
+    )
     participants_list = [p.name for p in sorted_participants_stats]
 
     # Generate topological sort string and levels
@@ -388,11 +400,8 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     return html_content
 
 
-app = Flask(__name__)
-
-
-@app.route("/")
-def serve_html():
+def build():
+    """Build the static files for the web app."""
     html_output = generate_match_html(MATCH_LOG)
     output_dir = "build"
     os.makedirs(output_dir, exist_ok=True)
@@ -401,7 +410,15 @@ def serve_html():
     with open(output_path, "w") as f:
         f.write(html_output)
     print(f"Generated {output_path}")
-    return send_from_directory(output_dir, "index.html")
+
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def serve_html():
+    build()
+    return send_from_directory("build", "index.html")
 
 
 @app.route("/<path:filename>")
@@ -410,8 +427,4 @@ def serve_static(filename):
 
 
 if __name__ == "__main__":
-    PORT = 5000
-    print(f"Serving at http://localhost:{PORT}")
-    print("Press Ctrl+C to stop the server")
-    os.system(f"open http://localhost:{PORT}/")
-    app.run(port=PORT, debug=True, use_reloader=False)
+    build()
