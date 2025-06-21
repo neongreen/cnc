@@ -34,12 +34,16 @@ export function drawGraph(graphData, graphHeight, levels) {
   // width same as table width (determined dynamically), or viewport width, whichever is bigger
   const width = Math.max(
     document.querySelector("table").offsetWidth,
-    window.innerWidth
+    window.innerWidth - 40
   )
   const height = graphHeight
 
-  // Set SVG dimensions explicitly
-  svg.attr("width", width).attr("height", height)
+  // Set SVG dimensions explicitly and ensure the element itself can extend
+  // beyond the viewport when needed.
+  svg
+    .attr("width", width)
+    .attr("height", height)
+    .style("width", width + "px")
 
   const radius = 30 // Radius for nodes
   const arrowSize = 5 // Size of the arrow marker
