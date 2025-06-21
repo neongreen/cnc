@@ -1,10 +1,18 @@
-# Run: uv run main.py
-# Add dependencies: uv add <dependency>
+# How to run: uv run main.py
+# How to add dependencies: uv add <dependency>
 
 from dataclasses import dataclass
 from datetime import date
 from babel.dates import format_date
 from babel.core import Locale
+
+
+@dataclass
+class ParticipantStats:
+    name: str
+    wins: int
+    losses: int
+
 
 MATCH_LOG = [
     {"date": date(2025, 6, 3), "sirius": 11, "chez": 1},
@@ -60,6 +68,30 @@ def sort_tuple(t: tuple[str, str]) -> tuple[str, str]:
     return (t[0], t[1]) if t[0] < t[1] else (t[1], t[0])
 
 
+def calculate_participant_stats(
+    match_dict: dict[tuple[str, str], list[MatchResult]], participants: set[str]
+) -> list[ParticipantStats]:
+    stats: dict[str, ParticipantStats] = {
+        p: ParticipantStats(name=p, wins=0, losses=0) for p in participants
+    }
+
+    for key in match_dict:
+        for match in match_dict[key]:
+            p1, p2 = match.player1, match.player2
+            score1, score2 = match.score1, match.score2
+
+            if score1 > score2:
+                stats[p1].wins += 1
+                stats[p2].losses += 1
+            elif score1 < score2:
+                stats[p1].losses += 1
+                stats[p2].wins += 1
+
+    # Sort participants: highest wins first, then highest losses last
+    sorted_stats = sorted(stats.values(), key=lambda x: (-x.wins, x.losses))
+    return sorted_stats
+
+
 def generate_match_html(match_log_data: list[dict]) -> str:
     # Create a dictionary to store match data for quick lookup
     match_dict: dict[tuple[str, str], list[MatchResult]] = {}
@@ -84,7 +116,9 @@ def generate_match_html(match_log_data: list[dict]) -> str:
     participants: set[str] = set()
     for p1, p2 in match_dict.keys():
         participants.update([p1, p2])
-    participants_list = sorted(participants)
+
+    sorted_participants_stats = calculate_participant_stats(match_dict, participants)
+    participants_list = [p.name for p in sorted_participants_stats]
     del participants
 
     html_content: str = f"""
@@ -135,13 +169,13 @@ def generate_match_html(match_log_data: list[dict]) -> str:
                             match.score1,
                             match.score2,
                         )
-                        if row_player == p1:
+                        if col_player == p1:
                             score_display = f"{score1}-{score2}"
                             if score1 > score2:
                                 cell_class = "win-cell"
                             elif score1 < score2:
                                 cell_class = "loss-cell"
-                        else:  # row_player == p2
+                        else:  # col_player == p2
                             score_display = f"{score2}-{score1}"
                             if score2 > score1:
                                 cell_class = "win-cell"
