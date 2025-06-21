@@ -238,6 +238,8 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     levels = topological_sort_participants(outcomes, participants)
     del participants  # No longer needed after this point
 
+    graph_height = 800
+
     html_content: str = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -266,7 +268,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
         }}
         #graph-svg {{
             width: 100%;
-            height: 600px;
+            height: {graph_height}px;
             border: 1px solid #ccc;
         }}
         .node {{
@@ -284,6 +286,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
         .edge {{
             stroke: #666;
             stroke-width: 2px;
+            marker-end: url(#arrowhead);
         }}
         .edge-label {{
             font-family: sans-serif;
@@ -371,11 +374,26 @@ def generate_match_html(matches: list[MatchResult]) -> str:
         const svg = d3.select("#graph-svg");
         // width same as table width (determined dynamically), or viewport width, whichever is bigger
         const width = Math.max(document.querySelector("table").offsetWidth, window.innerWidth);
-        const height = 600;
+        const height = {graph_height};
         
         // Set SVG dimensions explicitly
         svg.attr("width", width).attr("height", height);
 
+        const radius = 30; // Radius for nodes
+
+        // Create arrow marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", radius-2)
+            .attr("refY", 0)
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#666");
+        
         // Position nodes in hierarchical layout based on topological levels
         const levels = {json.dumps(levels)};
         const nodePositions = new Map();
@@ -417,7 +435,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
             .data(graphData.nodes)
             .enter().append("circle")
             .attr("class", "node")
-            .attr("r", 30);
+            .attr("r", radius);
         
         // Add node labels
         const nodeText = svg.append("g")
