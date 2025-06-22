@@ -223,7 +223,7 @@ def generate_match_html(matches: list[MatchResult]) -> str:
 
     del participants  # No longer needed after this point
 
-    graph_height = 800
+    graph_height = 700
 
     table_content: str = f"""
     <table>

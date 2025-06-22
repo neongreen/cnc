@@ -29,21 +29,20 @@ import * as d3 from "https://esm.sh/d3"
  * @param {Array<Array<string>>} levels - An array of arrays, where each inner array represents a level of nodes in the graph.
  */
 
+function darkenColor(hex, percent) {
+  let f = parseInt(hex.slice(1), 16),
+    R = f >> 16,
+    G = (f >> 8) & 0x00ff,
+    B = f & 0x0000ff
+
+  R = Math.round(R * (1 - percent))
+  G = Math.round(G * (1 - percent))
+  B = Math.round(B * (1 - percent))
+
+  return "#" + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)
+}
+
 export function drawGraph(graphData, graphHeight, levels) {
-  // Helper function to darken a hex color
-  function darkenColor(hex, percent) {
-    let f = parseInt(hex.slice(1), 16),
-      R = f >> 16,
-      G = (f >> 8) & 0x00ff,
-      B = f & 0x0000ff
-
-    R = Math.round(R * (1 - percent))
-    G = Math.round(G * (1 - percent))
-    B = Math.round(B * (1 - percent))
-
-    return "#" + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)
-  }
-
   console.log("drawGraph called with:", { graphData, graphHeight, levels })
   const svg = d3.select("#graph-svg")
   // width same as table width (determined dynamically), or viewport width, whichever is bigger
@@ -61,8 +60,9 @@ export function drawGraph(graphData, graphHeight, levels) {
     .attr("height", height)
     .style("width", width + "px")
 
-  const radius = 30 // Radius for nodes
+  const radius = 34 // Radius for nodes
   const arrowSize = 5 // Size of the arrow marker
+  const arrowheadAdjustment = 6 // Arrowheads shouldn't overlap with the node circles
 
   // Function to create a unique arrowhead for each link
   function createArrowhead(id, color) {
@@ -78,8 +78,7 @@ export function drawGraph(graphData, graphHeight, levels) {
       .attr("orient", "auto")
       .append("path")
       .attr("class", "arrowhead")
-      .attr("fill", color) // Set fill color directly
-      .attr("opacity", 1) // Ensure arrowhead is fully opaque
+      .attr("fill", color)
       .attr("d", "M0,-5L10,0L0,5")
     console.log(`Created arrowhead: ID=${id}, Color=${color}`)
   }
@@ -103,9 +102,9 @@ export function drawGraph(graphData, graphHeight, levels) {
   console.log("Calculating node positions...")
 
   levels.forEach((level, levelIndex) => {
-    const x = (levelIndex + 1) * (width / (levels.length + 1))
+    const x = (levelIndex + 0.5) * (width / levels.length)
     level.forEach((nodeName, nodeIndex) => {
-      const y = (nodeIndex + 1) * (height / (level.length + 1))
+      const y = (nodeIndex + 0.5) * (height / level.length)
       nodePositions.set(nodeName, { x, y })
       nodeColors.set(nodeName, colorPalette[levelIndex % colorPalette.length])
     })
@@ -194,8 +193,14 @@ export function drawGraph(graphData, graphHeight, levels) {
             y: d.source.y + radius * Math.sin(sourceAngle),
           }
           const calculatedTarget = {
-            x: d.target.x - (radius + arrowSize + 4) * Math.cos(targetAngle),
-            y: d.target.y - (radius + arrowSize + 4) * Math.sin(targetAngle),
+            x:
+              d.target.x -
+              (radius + arrowSize + arrowheadAdjustment) *
+                Math.cos(targetAngle),
+            y:
+              d.target.y -
+              (radius + arrowSize + arrowheadAdjustment) *
+                Math.sin(targetAngle),
           }
           console.log(
             `Edge path coordinates: Source=(${calculatedSource.x}, ${calculatedSource.y}), Target=(${calculatedTarget.x}, ${calculatedTarget.y})`
