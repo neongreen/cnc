@@ -88,15 +88,15 @@ export function drawGraph(graphData, graphHeight, levels) {
   const nodePositions = new Map()
   const nodeColors = new Map()
   const colorPalette = [
-    "#a72751", // reddish
     "#ff3d3d", // red
     "#ffb72a", // orange
+    "#e0e000", // yellow
     "#4bde3c", // green
-    "#33766c", // dark teal
     "#25bfe2", // light blue
     "#317de9", // blue
     "#4a3c95", // purple
     "#a55b99", // pink/purple
+    "#33766c", // dark teal
     "#fe827d", // light red/orange
     "#fed0b1", // light orange/peach
   ]
