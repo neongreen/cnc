@@ -95,9 +95,8 @@ export function drawGraph(graphData, graphHeight, levels) {
     "#317de9", // blue
     "#4a3c95", // purple
     "#a55b99", // pink/purple
-    "#33766c", // dark teal
-    "#fe827d", // light red/orange
-    "#fed0b1", // light orange/peach
+    "#6a3f42", // brown-ish
+    "#353f50", // blueish gray
   ]
   console.log("Calculating node positions...")
 
