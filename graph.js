@@ -283,7 +283,7 @@ function setFixedPositions(nodes, nodePositions) {
  * @param {Array<Node>} nodes - Graph nodes.
  * @param {Array<Edge>} edges - Graph edges.
  */
-function stopSimulation(nodes, edges) {
+function forceLinks(nodes, edges) {
   d3.forceSimulation(nodes)
     .force(
       "link",
@@ -333,7 +333,7 @@ export function drawGraph(graphData, graphHeight, levels) {
 
   setFixedPositions(graphData.nodes, nodePositions)
 
-  stopSimulation(graphData.nodes, graphData.edges)
+  forceLinks(graphData.nodes, graphData.edges)
 
   drawDirectedEdges(
     svg,
