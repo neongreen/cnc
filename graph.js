@@ -42,177 +42,118 @@ function darkenColor(hex, percent) {
   return "#" + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)
 }
 
-export function drawGraph(graphData, graphHeight, levels) {
-  console.log("drawGraph called with:", { graphData, graphHeight, levels })
-  const svg = d3.select("#graph-svg")
-  // width same as table width (determined dynamically), or viewport width, whichever is bigger
-  const width = Math.max(
-    document.querySelector("table").offsetWidth,
-    window.innerWidth - 40
-  )
-  const height = graphHeight
-  console.log("SVG dimensions:", { width, height })
-
-  // Set SVG dimensions explicitly and ensure the element itself can extend
-  // beyond the viewport when needed.
+// Create a unique arrowhead marker for a given id, color, and size
+function createArrowhead(svg, id, color, arrowSize) {
   svg
-    .attr("width", width)
-    .attr("height", height)
-    .style("width", width + "px")
+    .append("defs")
+    .append("marker")
+    .attr("id", id)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 0)
+    .attr("refY", 0)
+    .attr("markerWidth", arrowSize)
+    .attr("markerHeight", arrowSize)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("class", "arrowhead")
+    .attr("fill", color)
+    .attr("d", "M0,-5L10,0L0,5")
+}
 
-  const radius = 34 // Radius for nodes
-  const arrowSize = 5 // Size of the arrow marker
-  const arrowheadAdjustment = 6 // Arrowheads shouldn't overlap with the node circles
+// Render node circles and labels
+function drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColorFn) {
+  const node = svg
+    .append("g")
+    .selectAll("circle")
+    .data(graphData.nodes)
+    .enter()
+    .append("circle")
+    .attr("class", "node")
+    .attr("r", radius)
+    .attr("fill", (d) => nodeColors.get(d.id))
+    .attr("stroke", (d) => darkenColorFn(nodeColors.get(d.id), 0.2))
 
-  // Function to create a unique arrowhead for each link
-  function createArrowhead(id, color) {
-    svg
-      .append("defs")
-      .append("marker")
-      .attr("id", id)
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 0)
-      .attr("refY", 0)
-      .attr("markerWidth", arrowSize)
-      .attr("markerHeight", arrowSize)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("class", "arrowhead")
-      .attr("fill", color)
-      .attr("d", "M0,-5L10,0L0,5")
-    console.log(`Created arrowhead: ID=${id}, Color=${color}`)
-  }
+  const nodeText = svg
+    .append("g")
+    .selectAll("text")
+    .data(graphData.nodes)
+    .enter()
+    .append("text")
+    .attr("class", "node-text")
+    .text((d) => d.name)
 
-  // Position nodes in hierarchical layout based on topological levels
-  const nodePositions = new Map()
-  const nodeColors = new Map()
-  const colorPalette = [
-    "#ff3d3d", // red
-    "#ffb72a", // orange
-    "#e0e000", // yellow
-    "#4bde3c", // green
-    "#25bfe2", // light blue
-    "#317de9", // blue
-    "#4a3c95", // purple
-    "#a55b99", // pink/purple
-    "#6a3f42", // brown-ish
-    "#353f50", // blueish gray
-  ]
-  console.log("Calculating node positions...")
+  node.attr("cx", (d) => d.x).attr("cy", (d) => d.y)
+  nodeText.attr("x", (d) => d.x).attr("y", (d) => d.y)
+}
 
-  levels.forEach((level, levelIndex) => {
-    const x = (levelIndex + 0.5) * (width / levels.length)
-    level.forEach((nodeName, nodeIndex) => {
-      const y = (nodeIndex + 0.5) * (height / level.length)
-      nodePositions.set(nodeName, { x, y })
-      nodeColors.set(nodeName, colorPalette[levelIndex % colorPalette.length])
-    })
-  })
-
-  // Set fixed positions for nodes
-  console.log("Setting fixed positions for nodes...")
-  graphData.nodes.forEach((node) => {
-    const pos = nodePositions.get(node.id)
-    if (pos) {
-      node.x = pos.x
-      node.y = pos.y
-      node.fx = pos.x // Fix x position
-      node.fy = pos.y // Fix y position
-    }
-  })
-
-  // Create a simple simulation just for the links
-  d3.forceSimulation(graphData.nodes)
-    .force(
-      "link",
-      d3
-        .forceLink(graphData.edges)
-        .id((d) => d.id)
-        .distance(100)
-        .strength(0)
-    )
-    .stop() // Don't run the simulation, we have fixed positions
-
-  // Create edges
+// Draw directed edges including arrowheads and link paths
+function drawDirectedEdges(svg, graphData, nodeColors, radius, arrowSize, arrowheadAdjustment, darkenColorFn) {
   console.log("Creating edges...")
-
   // Create arrowheads for each edge
   graphData.edges.forEach((edge) => {
-    const linkColor = darkenColor(nodeColors.get(edge.source.id), 0.2)
-    const arrowheadId = `arrowhead-${edge.index}`
+    const color = darkenColorFn(nodeColors.get(edge.source.id), 0.2)
+    const id = `arrowhead-${edge.index}`
     console.log(
-      `Processing edge: Source=${edge.source.id}, Target=${edge.target.id}, Arrowhead ID=${arrowheadId}`
+      `Processing edge: Source=${edge.source.id}, Target=${edge.target.id}, Arrowhead ID=${id}`
     )
-    createArrowhead(arrowheadId, linkColor)
+    createArrowhead(svg, id, color, arrowSize)
   })
 
+  // Draw edge paths
   svg
     .append("g")
-    .selectAll("path")
+    .selectAll("path.edge")
     .data(graphData.edges)
     .enter()
     .append("path")
     .attr("class", "edge")
-    .attr("stroke", (d) => darkenColor(nodeColors.get(d.source.id), 0.2)) // Set stroke color based on source node, darkened
-    .attr("marker-end", (d) => `url(#arrowhead-${d.index})`) // Add unique marker to the end of the path
-    .attr("d", (d) => {
-      // Adjust target point to end at the circle's edge
-      return d3
+    .attr("stroke", (d) => darkenColorFn(nodeColors.get(d.source.id), 0.2))
+    .attr("marker-end", (d) => `url(#arrowhead-${d.index})`)
+    .attr("d", (d) =>
+      d3
         .linkHorizontal()
-        .x((d) => d.x)
-        .y((d) => d.y)(
+        .x((p) => p.x)
+        .y((p) => p.y)(
         (() => {
-          // Calculate how many edges come out of the source node / into the target node
           const edges = graphData.edges
           const sourceEdges = edges
             .filter((e) => e.source === d.source)
-            .sort((a, b) => a.target.y - b.target.y) // Sort by target node's y-coordinate
-          console.log("Source edges for current edge (sorted):", sourceEdges)
+            .sort((a, b) => a.target.y - b.target.y)
           const targetEdges = edges
             .filter((e) => e.target === d.target)
-            .sort((a, b) => b.source.y - a.source.y) // Sort by source node's y-coordinate
-          console.log("Target edges for current edge (sorted):", targetEdges)
-          // Calculate the angles for the edge based on the number of edges
-          const sourceIndex = sourceEdges.findIndex(
-            (e) => e.target === d.target
+            .sort((a, b) => b.source.y - a.source.y)
+          const angle = (i, total) => (((i - (total - 1) / 2) / total) * Math.PI) / 2
+          const sourceAngle = angle(
+            sourceEdges.findIndex((e) => e.target === d.target),
+            sourceEdges.length
           )
-          console.log("Source index:", sourceIndex)
-          const targetIndex = targetEdges.findIndex(
-            (e) => e.source === d.source
-          )
-          console.log("Target index:", targetIndex)
-          const angle = (i, total) =>
-            (((i - (total - 1) / 2) / total) * Math.PI) / 2
-          const sourceAngle = angle(sourceIndex, sourceEdges.length)
-          console.log("Source angle:", sourceAngle)
-          const targetAngle = angle(targetIndex, targetEdges.length)
-          console.log("Target angle:", targetAngle)
-          const calculatedSource = {
-            x: d.source.x + radius * Math.cos(sourceAngle),
-            y: d.source.y + radius * Math.sin(sourceAngle),
-          }
-          const calculatedTarget = {
-            x:
-              d.target.x -
-              (radius + arrowSize + arrowheadAdjustment) *
-                Math.cos(targetAngle),
-            y:
-              d.target.y -
-              (radius + arrowSize + arrowheadAdjustment) *
-                Math.sin(targetAngle),
-          }
-          console.log(
-            `Edge path coordinates: Source=(${calculatedSource.x}, ${calculatedSource.y}), Target=(${calculatedTarget.x}, ${calculatedTarget.y})`
+          const targetAngle = angle(
+            targetEdges.findIndex((e) => e.source === d.source),
+            targetEdges.length
           )
           return {
-            source: calculatedSource,
-            target: calculatedTarget,
+            source: {
+              x: d.source.x + radius * Math.cos(sourceAngle),
+              y: d.source.y + radius * Math.sin(sourceAngle),
+            },
+            target: {
+              x:
+                d.target.x -
+                (radius + arrowSize + arrowheadAdjustment) *
+                  Math.cos(targetAngle),
+              y:
+                d.target.y -
+                (radius + arrowSize + arrowheadAdjustment) *
+                  Math.sin(targetAngle),
+            },
           }
         })()
       )
-    })
+    )
+}
 
-  // Create tie edges (draw dashed lines for matches that tied)
+// Draw tie edges as dashed lines between tied nodes
+function drawTieEdges(svg, graphData, radius) {
   console.log("Creating tie edges...")
   const tieLinks = (graphData.ties || []).map((t) => ({
     source: graphData.nodes.find((n) => n.id === t.source),
@@ -241,32 +182,94 @@ export function drawGraph(graphData, graphHeight, levels) {
       const end = { x: t.x - radius * ux, y: t.y - radius * uy }
       return `M${start.x},${start.y}L${end.x},${end.y}`
     })
+}
 
-  // Create nodes
-  console.log("Creating nodes...")
-  const node = svg
-    .append("g")
-    .selectAll("circle")
-    .data(graphData.nodes)
-    .enter()
-    .append("circle")
-    .attr("class", "node")
-    .attr("r", radius)
-    .attr("fill", (d) => nodeColors.get(d.id)) // Set fill color based on node's level
-    .attr("stroke", (d) => darkenColor(nodeColors.get(d.id), 0.2)) // Set stroke color to a darker version of fill
+// Compute node positions and assign colors based on topological levels
+function computeNodeLayout(levels, width, height, palette) {
+  const nodePositions = new Map()
+  const nodeColors = new Map()
+  levels.forEach((level, levelIndex) => {
+    const x = (levelIndex + 0.5) * (width / levels.length)
+    level.forEach((nodeName, nodeIndex) => {
+      const y = (nodeIndex + 0.5) * (height / level.length)
+      nodePositions.set(nodeName, { x, y })
+      nodeColors.set(nodeName, palette[levelIndex % palette.length])
+    })
+  })
+  return { nodePositions, nodeColors }
+}
 
-  // Add node labels
-  console.log("Adding node labels...")
-  const nodeText = svg
-    .append("g")
-    .selectAll("text")
-    .data(graphData.nodes)
-    .enter()
-    .append("text")
-    .attr("class", "node-text")
-    .text((d) => d.name)
+export function drawGraph(graphData, graphHeight, levels) {
+  console.log("drawGraph called with:", { graphData, graphHeight, levels })
+  const svg = d3.select("#graph-svg")
+  // width same as table width (determined dynamically), or viewport width, whichever is bigger
+  const width = Math.max(
+    document.querySelector("table").offsetWidth,
+    window.innerWidth - 40
+  )
+  const height = graphHeight
+  console.log("SVG dimensions:", { width, height })
 
-  node.attr("cx", (d) => d.x).attr("cy", (d) => d.y)
+  // Set SVG dimensions explicitly and ensure the element itself can extend
+  // beyond the viewport when needed.
+  svg
+    .attr("width", width)
+    .attr("height", height)
+    .style("width", width + "px")
 
-  nodeText.attr("x", (d) => d.x).attr("y", (d) => d.y)
+  const radius = 34 // Radius for nodes
+  const arrowSize = 5 // Size of the arrow marker
+  const arrowheadAdjustment = 6 // Arrowheads shouldn't overlap with the node circles
+
+  const colorPalette = [
+    "#ff3d3d", // red
+    "#ffb72a", // orange
+    "#e0e000", // yellow
+    "#4bde3c", // green
+    "#25bfe2", // light blue
+    "#317de9", // blue
+    "#4a3c95", // purple
+    "#a55b99", // pink/purple
+    "#6a3f42", // brown-ish
+    "#353f50", // blueish gray
+  ]
+  console.log("Calculating node positions...")
+  const { nodePositions, nodeColors } = computeNodeLayout(
+    levels,
+    width,
+    height,
+    colorPalette
+  )
+
+  // Set fixed positions for nodes
+  console.log("Setting fixed positions for nodes...")
+  graphData.nodes.forEach((node) => {
+    const pos = nodePositions.get(node.id)
+    if (pos) {
+      node.x = pos.x
+      node.y = pos.y
+      node.fx = pos.x // Fix x position
+      node.fy = pos.y // Fix y position
+    }
+  })
+
+  // Create a simple simulation just for the links
+  d3.forceSimulation(graphData.nodes)
+    .force(
+      "link",
+      d3
+        .forceLink(graphData.edges)
+        .id((d) => d.id)
+        .distance(100)
+        .strength(0)
+    )
+    .stop() // Don't run the simulation, we have fixed positions
+
+  drawDirectedEdges(svg, graphData, nodeColors, radius, arrowSize, arrowheadAdjustment, darkenColor)
+
+  drawTieEdges(svg, graphData, radius)
+
+  // Create nodes and labels
+  console.log("Creating nodes and labels...")
+  drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColor)
 }
