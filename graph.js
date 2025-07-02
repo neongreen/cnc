@@ -71,9 +71,8 @@ function createArrowhead(svg, id, color, arrowSize) {
  * @param {GraphData} graphData - The graph data object.
  * @param {Map<string, string>} nodeColors - Map of node ID to fill color.
  * @param {number} radius - Radius for each node circle.
- * @param {function(string, number): string} darkenColorFn - Function to darken a color.
  */
-function drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColorFn) {
+function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
   const node = svg
     .append("g")
     .selectAll("circle")
@@ -83,7 +82,7 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColorFn) {
     .attr("class", "node")
     .attr("r", radius)
     .attr("fill", (d) => nodeColors.get(d.id))
-    .attr("stroke", (d) => darkenColorFn(nodeColors.get(d.id), 0.2))
+    .attr("stroke", (d) => darkenColor(nodeColors.get(d.id), 0.2))
 
   const nodeText = svg
     .append("g")
@@ -106,7 +105,6 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColorFn) {
  * @param {number} radius - Radius of node circles.
  * @param {number} arrowSize - Size of the arrow marker.
  * @param {number} arrowheadAdjustment - Additional offset for arrow placement.
- * @param {function(string, number): string} darkenColorFn - Function to darken colors.
  */
 function drawDirectedEdges(
   svg,
@@ -114,13 +112,12 @@ function drawDirectedEdges(
   nodeColors,
   radius,
   arrowSize,
-  arrowheadAdjustment,
-  darkenColorFn
+  arrowheadAdjustment
 ) {
   console.log("Creating edges...")
   // Create arrowheads for each edge
   graphData.edges.forEach((edge) => {
-    const color = darkenColorFn(nodeColors.get(edge.source.id), 0.2)
+    const color = darkenColor(nodeColors.get(edge.source.id), 0.2)
     const id = `arrowhead-${edge.index}`
     console.log(
       `Processing edge: Source=${edge.source.id}, Target=${edge.target.id}, Arrowhead ID=${id}`
@@ -136,7 +133,7 @@ function drawDirectedEdges(
     .enter()
     .append("path")
     .attr("class", "edge")
-    .attr("stroke", (d) => darkenColorFn(nodeColors.get(d.source.id), 0.2))
+    .attr("stroke", (d) => darkenColor(nodeColors.get(d.source.id), 0.2))
     .attr("marker-end", (d) => `url(#arrowhead-${d.index})`)
     .attr("d", (d) =>
       d3
@@ -163,7 +160,13 @@ function drawDirectedEdges(
  * @param {number} arrowheadAdjustment - Extra offset for arrowheads.
  * @returns {{source:{x:number,y:number}, target:{x:number,y:number}}}
  */
-function computeEdgeCoordinates(edge, edges, radius, arrowSize, arrowheadAdjustment) {
+function computeEdgeCoordinates(
+  edge,
+  edges,
+  radius,
+  arrowSize,
+  arrowheadAdjustment
+) {
   const sourceEdges = edges
     .filter((e) => e.source === edge.source)
     .sort((a, b) => a.target.y - b.target.y)
@@ -354,11 +357,10 @@ export function drawGraph(graphData, graphHeight, levels) {
     nodeColors,
     radius,
     arrowSize,
-    arrowheadAdjustment,
-    darkenColor
+    arrowheadAdjustment
   )
 
   drawTieEdges(svg, graphData, radius)
 
-  drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColor)
+  drawNodesAndLabels(svg, graphData, nodeColors, radius)
 }
