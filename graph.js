@@ -143,43 +143,56 @@ function drawDirectedEdges(
         .linkHorizontal()
         .x((p) => p.x)
         .y((p) => p.y)(
-        (() => {
-          const edges = graphData.edges
-          const sourceEdges = edges
-            .filter((e) => e.source === d.source)
-            .sort((a, b) => a.target.y - b.target.y)
-          const targetEdges = edges
-            .filter((e) => e.target === d.target)
-            .sort((a, b) => b.source.y - a.source.y)
-          const angle = (i, total) =>
-            (((i - (total - 1) / 2) / total) * Math.PI) / 2
-          const sourceAngle = angle(
-            sourceEdges.findIndex((e) => e.target === d.target),
-            sourceEdges.length
-          )
-          const targetAngle = angle(
-            targetEdges.findIndex((e) => e.source === d.source),
-            targetEdges.length
-          )
-          return {
-            source: {
-              x: d.source.x + radius * Math.cos(sourceAngle),
-              y: d.source.y + radius * Math.sin(sourceAngle),
-            },
-            target: {
-              x:
-                d.target.x -
-                (radius + arrowSize + arrowheadAdjustment) *
-                  Math.cos(targetAngle),
-              y:
-                d.target.y -
-                (radius + arrowSize + arrowheadAdjustment) *
-                  Math.sin(targetAngle),
-            },
-          }
-        })()
+        computeEdgeCoordinates(
+          d,
+          graphData.edges,
+          radius,
+          arrowSize,
+          arrowheadAdjustment
+        )
       )
     )
+}
+
+/**
+ * Compute offset source and target points for an edge to avoid overlap.
+ * @param {object} edge - The edge with source and target nodes.
+ * @param {Array<object>} edges - All edges in the graph.
+ * @param {number} radius - Radius of the node circles.
+ * @param {number} arrowSize - Size of the arrow marker.
+ * @param {number} arrowheadAdjustment - Extra offset for arrowheads.
+ * @returns {{source:{x:number,y:number}, target:{x:number,y:number}}}
+ */
+function computeEdgeCoordinates(edge, edges, radius, arrowSize, arrowheadAdjustment) {
+  const sourceEdges = edges
+    .filter((e) => e.source === edge.source)
+    .sort((a, b) => a.target.y - b.target.y)
+  const targetEdges = edges
+    .filter((e) => e.target === edge.target)
+    .sort((a, b) => b.source.y - a.source.y)
+  const angle = (i, total) => (((i - (total - 1) / 2) / total) * Math.PI) / 2
+  const sourceAngle = angle(
+    sourceEdges.findIndex((e) => e.target === edge.target),
+    sourceEdges.length
+  )
+  const targetAngle = angle(
+    targetEdges.findIndex((e) => e.source === edge.source),
+    targetEdges.length
+  )
+  return {
+    source: {
+      x: edge.source.x + radius * Math.cos(sourceAngle),
+      y: edge.source.y + radius * Math.sin(sourceAngle),
+    },
+    target: {
+      x:
+        edge.target.x -
+        (radius + arrowSize + arrowheadAdjustment) * Math.cos(targetAngle),
+      y:
+        edge.target.y -
+        (radius + arrowSize + arrowheadAdjustment) * Math.sin(targetAngle),
+    },
+  }
 }
 
 /**
