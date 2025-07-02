@@ -23,12 +23,11 @@ import * as d3 from "https://esm.sh/d3"
  */
 
 /**
- * Draws a graph using D3.js.
- * @param {GraphData} graphData - The graph data.
- * @param {number} graphHeight - The height of the graph SVG.
- * @param {Array<Array<string>>} levels - An array of arrays, where each inner array represents a level of nodes in the graph.
+ * Darkens a hex color by a given percentage.
+ * @param {string} hex - The color in hex format (e.g., "#rrggbb").
+ * @param {number} percent - The fraction to darken (0 to 1).
+ * @returns {string} The darkened hex color.
  */
-
 function darkenColor(hex, percent) {
   let f = parseInt(hex.slice(1), 16),
     R = f >> 16,
@@ -42,7 +41,13 @@ function darkenColor(hex, percent) {
   return "#" + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)
 }
 
-// Create a unique arrowhead marker for a given id, color, and size
+/**
+ * Creates a unique arrowhead marker in the SVG defs.
+ * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG selection.
+ * @param {string} id - The marker ID.
+ * @param {string} color - Fill color for the arrowhead.
+ * @param {number} arrowSize - Size of the arrow marker.
+ */
 function createArrowhead(svg, id, color, arrowSize) {
   svg
     .append("defs")
@@ -60,7 +65,14 @@ function createArrowhead(svg, id, color, arrowSize) {
     .attr("d", "M0,-5L10,0L0,5")
 }
 
-// Render node circles and labels
+/**
+ * Renders node circles and labels on the SVG.
+ * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG container.
+ * @param {GraphData} graphData - The graph data object.
+ * @param {Map<string, string>} nodeColors - Map of node ID to fill color.
+ * @param {number} radius - Radius for each node circle.
+ * @param {function(string, number): string} darkenColorFn - Function to darken a color.
+ */
 function drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColorFn) {
   const node = svg
     .append("g")
@@ -86,8 +98,25 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColorFn) {
   nodeText.attr("x", (d) => d.x).attr("y", (d) => d.y)
 }
 
-// Draw directed edges including arrowheads and link paths
-function drawDirectedEdges(svg, graphData, nodeColors, radius, arrowSize, arrowheadAdjustment, darkenColorFn) {
+/**
+ * Draws directed edges with arrowheads and angled paths to avoid overlap.
+ * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG container.
+ * @param {GraphData} graphData - The graph data containing nodes and edges.
+ * @param {Map<string, string>} nodeColors - Map of node ID to color.
+ * @param {number} radius - Radius of node circles.
+ * @param {number} arrowSize - Size of arrow markers.
+ * @param {number} arrowheadAdjustment - Additional offset for arrow placement.
+ * @param {function(string, number): string} darkenColorFn - Function to darken colors.
+ */
+function drawDirectedEdges(
+  svg,
+  graphData,
+  nodeColors,
+  radius,
+  arrowSize,
+  arrowheadAdjustment,
+  darkenColorFn
+) {
   console.log("Creating edges...")
   // Create arrowheads for each edge
   graphData.edges.forEach((edge) => {
@@ -122,7 +151,8 @@ function drawDirectedEdges(svg, graphData, nodeColors, radius, arrowSize, arrowh
           const targetEdges = edges
             .filter((e) => e.target === d.target)
             .sort((a, b) => b.source.y - a.source.y)
-          const angle = (i, total) => (((i - (total - 1) / 2) / total) * Math.PI) / 2
+          const angle = (i, total) =>
+            (((i - (total - 1) / 2) / total) * Math.PI) / 2
           const sourceAngle = angle(
             sourceEdges.findIndex((e) => e.target === d.target),
             sourceEdges.length
@@ -152,7 +182,12 @@ function drawDirectedEdges(svg, graphData, nodeColors, radius, arrowSize, arrowh
     )
 }
 
-// Draw tie edges as dashed lines between tied nodes
+/**
+ * Draws tie edges as dashed lines between nodes that tied.
+ * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG container.
+ * @param {GraphData} graphData - The graph data with tie edge info.
+ * @param {number} radius - Radius of node circles for offset calculations.
+ */
 function drawTieEdges(svg, graphData, radius) {
   console.log("Creating tie edges...")
   const tieLinks = (graphData.ties || []).map((t) => ({
@@ -184,7 +219,14 @@ function drawTieEdges(svg, graphData, radius) {
     })
 }
 
-// Compute node positions and assign colors based on topological levels
+/**
+ * Computes node positions and assigns colors based on hierarchical levels.
+ * @param {Array<Array<string>>} levels - Topological levels of node IDs.
+ * @param {number} width - Available width for layout.
+ * @param {number} height - Available height for layout.
+ * @param {Array<string>} palette - Array of colors for levels.
+ * @returns {{nodePositions: Map<string,{x:number,y:number}>, nodeColors: Map<string,string>}}
+ */
 function computeNodeLayout(levels, width, height, palette) {
   const nodePositions = new Map()
   const nodeColors = new Map()
@@ -199,6 +241,12 @@ function computeNodeLayout(levels, width, height, palette) {
   return { nodePositions, nodeColors }
 }
 
+/**
+ * Draws a graph using D3.js.
+ * @param {GraphData} graphData - The graph data.
+ * @param {number} graphHeight - The height of the graph SVG.
+ * @param {Array<Array<string>>} levels - An array of arrays, where each inner array represents a level of nodes in the graph.
+ */
 export function drawGraph(graphData, graphHeight, levels) {
   console.log("drawGraph called with:", { graphData, graphHeight, levels })
   const svg = d3.select("#graph-svg")
@@ -265,7 +313,15 @@ export function drawGraph(graphData, graphHeight, levels) {
     )
     .stop() // Don't run the simulation, we have fixed positions
 
-  drawDirectedEdges(svg, graphData, nodeColors, radius, arrowSize, arrowheadAdjustment, darkenColor)
+  drawDirectedEdges(
+    svg,
+    graphData,
+    nodeColors,
+    radius,
+    arrowSize,
+    arrowheadAdjustment,
+    darkenColor
+  )
 
   drawTieEdges(svg, graphData, radius)
 
