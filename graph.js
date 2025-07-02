@@ -104,7 +104,7 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColorFn) {
  * @param {GraphData} graphData - The graph data containing nodes and edges.
  * @param {Map<string, string>} nodeColors - Map of node ID to color.
  * @param {number} radius - Radius of node circles.
- * @param {number} arrowSize - Size of arrow markers.
+ * @param {number} arrowSize - Size of the arrow marker.
  * @param {number} arrowheadAdjustment - Additional offset for arrow placement.
  * @param {function(string, number): string} darkenColorFn - Function to darken colors.
  */
@@ -242,6 +242,61 @@ function computeNodeLayout(levels, width, height, palette) {
 }
 
 /**
+ * Initialize and size the SVG container.
+ * @param {string} selector - CSS selector for the SVG element.
+ * @param {number} height - Desired SVG height.
+ * @returns {{svg: import("d3").Selection<SVGSVGElement, unknown, null, undefined>, width: number, height: number}}
+ */
+function initSVG(selector, height) {
+  const svg = d3.select(selector)
+  const width = Math.max(
+    document.querySelector("table").offsetWidth,
+    window.innerWidth - 40
+  )
+  svg
+    .attr("width", width)
+    .attr("height", height)
+    .style("width", width + "px")
+  return { svg, width, height }
+}
+
+/**
+ * Fix node coordinates to computed positions.
+ * @param {Array<Node>} nodes - Graph nodes.
+ * @param {Map<string, {x:number,y:number}>} nodePositions - Map of node IDs to positions.
+ */
+function setFixedPositions(nodes, nodePositions) {
+  console.log("Setting fixed positions for nodes...")
+  nodes.forEach((node) => {
+    const pos = nodePositions.get(node.id)
+    if (pos) {
+      node.x = pos.x
+      node.y = pos.y
+      node.fx = pos.x
+      node.fy = pos.y
+    }
+  })
+}
+
+/**
+ * Setup a force simulation for links, then stop (nodes are fixed).
+ * @param {Array<Node>} nodes - Graph nodes.
+ * @param {Array<Edge>} edges - Graph edges.
+ */
+function stopSimulation(nodes, edges) {
+  d3.forceSimulation(nodes)
+    .force(
+      "link",
+      d3
+        .forceLink(edges)
+        .id((d) => d.id)
+        .distance(100)
+        .strength(0)
+    )
+    .stop()
+}
+
+/**
  * Draws a graph using D3.js.
  * @param {GraphData} graphData - The graph data.
  * @param {number} graphHeight - The height of the graph SVG.
@@ -249,21 +304,8 @@ function computeNodeLayout(levels, width, height, palette) {
  */
 export function drawGraph(graphData, graphHeight, levels) {
   console.log("drawGraph called with:", { graphData, graphHeight, levels })
-  const svg = d3.select("#graph-svg")
-  // width same as table width (determined dynamically), or viewport width, whichever is bigger
-  const width = Math.max(
-    document.querySelector("table").offsetWidth,
-    window.innerWidth - 40
-  )
-  const height = graphHeight
+  const { svg, width, height } = initSVG("#graph-svg", graphHeight)
   console.log("SVG dimensions:", { width, height })
-
-  // Set SVG dimensions explicitly and ensure the element itself can extend
-  // beyond the viewport when needed.
-  svg
-    .attr("width", width)
-    .attr("height", height)
-    .style("width", width + "px")
 
   const radius = 34 // Radius for nodes
   const arrowSize = 5 // Size of the arrow marker
@@ -289,29 +331,9 @@ export function drawGraph(graphData, graphHeight, levels) {
     colorPalette
   )
 
-  // Set fixed positions for nodes
-  console.log("Setting fixed positions for nodes...")
-  graphData.nodes.forEach((node) => {
-    const pos = nodePositions.get(node.id)
-    if (pos) {
-      node.x = pos.x
-      node.y = pos.y
-      node.fx = pos.x // Fix x position
-      node.fy = pos.y // Fix y position
-    }
-  })
+  setFixedPositions(graphData.nodes, nodePositions)
 
-  // Create a simple simulation just for the links
-  d3.forceSimulation(graphData.nodes)
-    .force(
-      "link",
-      d3
-        .forceLink(graphData.edges)
-        .id((d) => d.id)
-        .distance(100)
-        .strength(0)
-    )
-    .stop() // Don't run the simulation, we have fixed positions
+  stopSimulation(graphData.nodes, graphData.edges)
 
   drawDirectedEdges(
     svg,
@@ -325,7 +347,5 @@ export function drawGraph(graphData, graphHeight, levels) {
 
   drawTieEdges(svg, graphData, radius)
 
-  // Create nodes and labels
-  console.log("Creating nodes and labels...")
   drawNodesAndLabels(svg, graphData, nodeColors, radius, darkenColor)
 }
