@@ -212,6 +212,36 @@ export function drawGraph(graphData, graphHeight, levels) {
       )
     })
 
+  // Create tie edges (draw dashed lines for matches that tied)
+  console.log("Creating tie edges...")
+  const tieLinks = (graphData.ties || []).map((t) => ({
+    source: graphData.nodes.find((n) => n.id === t.source),
+    target: graphData.nodes.find((n) => n.id === t.target),
+  }))
+  svg
+    .append("g")
+    .selectAll("path.tie")
+    .data(tieLinks)
+    .enter()
+    .append("path")
+    .attr("class", "tie")
+    .attr("stroke", "#999")
+    .attr("stroke-dasharray", "4,2")
+    .attr("stroke-width", 3)
+    .attr("fill", "none")
+    .attr("d", (d) => {
+      const s = d.source,
+        t = d.target
+      const dx = t.x - s.x,
+        dy = t.y - s.y
+      const dist = Math.hypot(dx, dy)
+      const ux = dx / dist,
+        uy = dy / dist
+      const start = { x: s.x + radius * ux, y: s.y + radius * uy }
+      const end = { x: t.x - radius * ux, y: t.y - radius * uy }
+      return `M${start.x},${start.y}L${end.x},${end.y}`
+    })
+
   // Create nodes
   console.log("Creating nodes...")
   const node = svg

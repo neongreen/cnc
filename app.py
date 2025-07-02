@@ -303,7 +303,16 @@ def generate_match_html(matches: list[MatchResult]) -> str:
     for winner, loser in outcomes:
         edges.append({"source": winner, "target": loser})
 
-    graph_data = {"nodes": nodes, "edges": edges}
+    # Generate tie edges for matches that ended in a draw
+    ties_set = set()
+    for match in matches:
+        if match.score1 == match.score2:
+            key = sort_tuple((match.player1, match.player2))
+            ties_set.add(key)
+    ties = [{"source": a, "target": b} for a, b in ties_set]
+
+    # Include tie edges in the graph data
+    graph_data = {"nodes": nodes, "edges": edges, "ties": ties}
 
     return render_template(
         "index.html.j2",
