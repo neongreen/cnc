@@ -1,3 +1,5 @@
+settings.python.uv_venv_auto = true
+
 [tools]
 uv = "latest"
 
@@ -10,3 +12,7 @@ run = "uv run flask run --debug -h 0.0.0.0 -p 5500 --extra-files=./templates/ind
 description = "Build static files without starting the server"
 quiet = true
 run = "uv run app.py"
+
+[tasks.pyright]
+description = "Run type checks on Python"
+run = "uv run pyright --project ."
