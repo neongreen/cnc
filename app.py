@@ -334,6 +334,8 @@ def build():
     output_dir = "build"
     os.makedirs(output_dir, exist_ok=True)
     shutil.copyfile("graph.js", os.path.join(output_dir, "graph.js"))
+    shutil.rmtree(os.path.join(output_dir, "static"), ignore_errors=True)
+    shutil.copytree("static", os.path.join(output_dir, "static"))
     output_path = os.path.join(output_dir, "index.html")
     with open(output_path, "w") as f:
         f.write(html_output)
