@@ -12,14 +12,16 @@ import * as d3 from "https://esm.sh/d3"
 
 /**
  * @typedef {object} Edge
- * @property {string} source - The source node ID of the edge.
- * @property {string} target - The target node ID of the edge.
+ * @property {Node} source - The source node object.
+ * @property {Node} target - The target node object.
+ * @property {number} [index] - The optional index, assigned by D3.
  */
 
 /**
  * @typedef {object} GraphData
  * @property {Array<Node>} nodes - An array of node objects.
  * @property {Array<Edge>} edges - An array of edge objects.
+ * @property {Array<{source: string, target: string}>} [ties] - Optional array of tie edges.
  */
 
 /**
@@ -29,8 +31,8 @@ import * as d3 from "https://esm.sh/d3"
  * @returns {string} The darkened hex color.
  */
 function darkenColor(hex, percent) {
-  let f = parseInt(hex.slice(1), 16),
-    R = f >> 16,
+  const f = parseInt(hex.slice(1), 16)
+  let R = f >> 16,
     G = (f >> 8) & 0x00ff,
     B = f & 0x0000ff
 
@@ -43,7 +45,7 @@ function darkenColor(hex, percent) {
 
 /**
  * Creates a unique arrowhead marker in the SVG defs.
- * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG selection.
+ * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG selection.
  * @param {string} id - The marker ID.
  * @param {string} color - Fill color for the arrowhead.
  * @param {number} arrowSize - Size of the arrow marker.
@@ -67,7 +69,7 @@ function createArrowhead(svg, id, color, arrowSize) {
 
 /**
  * Renders node circles and labels on the SVG.
- * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG container.
+ * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG container.
  * @param {GraphData} graphData - The graph data object.
  * @param {Map<string, string>} nodeColors - Map of node ID to fill color.
  * @param {number} radius - Radius for each node circle.
@@ -81,8 +83,8 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
     .append("circle")
     .attr("class", "node")
     .attr("r", radius)
-    .attr("fill", (d) => nodeColors.get(d.id))
-    .attr("stroke", (d) => darkenColor(nodeColors.get(d.id), 0.2))
+    .attr("fill", (d) => trust(nodeColors.get(d.id)))
+    .attr("stroke", (d) => darkenColor(trust(nodeColors.get(d.id)), 0.2))
 
   const nodeText = svg
     .append("g")
@@ -99,7 +101,7 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
 
 /**
  * Draws directed edges with arrowheads and angled paths to avoid overlap.
- * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG container.
+ * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG container.
  * @param {GraphData} graphData - The graph data containing nodes and edges.
  * @param {Map<string, string>} nodeColors - Map of node ID to color.
  * @param {number} radius - Radius of node circles.
@@ -117,13 +119,16 @@ function drawDirectedEdges(
   console.log("Creating edges...")
   // Create arrowheads for each edge
   graphData.edges.forEach((edge) => {
-    const color = darkenColor(nodeColors.get(edge.source.id), 0.2)
+    const color = darkenColor(trust(nodeColors.get(edge.source.id)), 0.2)
     const id = `arrowhead-${edge.index}`
     console.log(
       `Processing edge: Source=${edge.source.id}, Target=${edge.target.id}, Arrowhead ID=${id}`
     )
     createArrowhead(svg, id, color, arrowSize)
   })
+
+  /** @type {typeof d3.linkHorizontal<unknown, Node> } */
+  const d3_linkHorizontal = d3.linkHorizontal
 
   // Draw edge paths
   svg
@@ -133,11 +138,10 @@ function drawDirectedEdges(
     .enter()
     .append("path")
     .attr("class", "edge")
-    .attr("stroke", (d) => darkenColor(nodeColors.get(d.source.id), 0.2))
+    .attr("stroke", (d) => darkenColor(trust(nodeColors.get(d.source.id)), 0.2))
     .attr("marker-end", (d) => `url(#arrowhead-${d.index})`)
     .attr("d", (d) =>
-      d3
-        .linkHorizontal()
+      d3_linkHorizontal()
         .x((p) => p.x)
         .y((p) => p.y)(
         computeEdgeCoordinates(
@@ -153,8 +157,8 @@ function drawDirectedEdges(
 
 /**
  * Compute offset source and target points for an edge to avoid overlap.
- * @param {object} edge - The edge with source and target nodes.
- * @param {Array<object>} edges - All edges in the graph.
+ * @param {Edge} edge - The edge with source and target nodes.
+ * @param {Array<Edge>} edges - All edges in the graph.
  * @param {number} radius - Radius of the node circles.
  * @param {number} arrowSize - Size of the arrow marker.
  * @param {number} arrowheadAdjustment - Extra offset for arrowheads.
@@ -173,7 +177,13 @@ function computeEdgeCoordinates(
   const targetEdges = edges
     .filter((e) => e.target === edge.target)
     .sort((a, b) => b.source.y - a.source.y)
-  const angle = (i, total) => (((i - (total - 1) / 2) / total) * Math.PI) / 2
+  /**
+   * @param {number} i
+   * @param {number} total
+   */
+  function angle(i, total) {
+    return (((i - (total - 1) / 2) / total) * Math.PI) / 2
+  }
   const sourceAngle = angle(
     sourceEdges.findIndex((e) => e.target === edge.target),
     sourceEdges.length
@@ -200,16 +210,18 @@ function computeEdgeCoordinates(
 
 /**
  * Draws tie edges as dashed lines between nodes that tied.
- * @param {import("d3").Selection<SVGSVGElement, unknown, null, undefined>} svg - The D3 SVG container.
+ * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG container.
  * @param {GraphData} graphData - The graph data with tie edge info.
  * @param {number} radius - Radius of node circles for offset calculations.
  */
 function drawTieEdges(svg, graphData, radius) {
   console.log("Creating tie edges...")
-  const tieLinks = (graphData.ties || []).map((t) => ({
-    source: graphData.nodes.find((n) => n.id === t.source),
-    target: graphData.nodes.find((n) => n.id === t.target),
-  }))
+  const tieLinks = (graphData.ties || [])
+    .map((t) => ({
+      source: graphData.nodes.find((n) => n.id === t.source),
+      target: graphData.nodes.find((n) => n.id === t.target),
+    }))
+    .filter((link) => link.source && link.target)
   svg
     .append("g")
     .selectAll("path.tie")
@@ -222,8 +234,8 @@ function drawTieEdges(svg, graphData, radius) {
     .attr("stroke-width", 3)
     .attr("fill", "none")
     .attr("d", (d) => {
-      const s = d.source,
-        t = d.target
+      const s = trust(d.source),
+        t = trust(d.target)
       const dx = t.x - s.x,
         dy = t.y - s.y
       const dist = Math.hypot(dx, dy)
@@ -261,12 +273,14 @@ function computeNodeLayout(levels, width, height, palette) {
  * Initialize and size the SVG container.
  * @param {string} selector - CSS selector for the SVG element.
  * @param {number} height - Desired SVG height.
- * @returns {{svg: import("d3").Selection<SVGSVGElement, unknown, null, undefined>, width: number, height: number}}
+ * @returns {{svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>, width: number, height: number}}
  */
 function initSVG(selector, height) {
+  /** @type {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} */
   const svg = d3.select(selector)
   const width = Math.max(
-    document.querySelector("table").offsetWidth,
+    trust(document.querySelector("table")).offsetWidth,
+    // deno-lint-ignore no-window
     window.innerWidth - 40
   )
   svg
@@ -300,11 +314,13 @@ function setFixedPositions(nodes, nodePositions) {
  * @param {Array<Edge>} edges - Graph edges.
  */
 function forceLinks(nodes, edges) {
+  /** @type {typeof d3.forceLink<Node, Edge>} */
+  const d3_forceLink = d3.forceLink
+
   d3.forceSimulation(nodes)
     .force(
       "link",
-      d3
-        .forceLink(edges)
+      d3_forceLink(edges)
         .id((d) => d.id)
         .distance(100)
         .strength(0)
@@ -363,4 +379,18 @@ export function drawGraph(graphData, graphHeight, levels) {
   drawTieEdges(svg, graphData, radius)
 
   drawNodesAndLabels(svg, graphData, nodeColors, radius)
+}
+
+/**
+ * Throwing an error if the value is undefined.
+ *
+ * @template T
+ * @param {T | undefined | null} value
+ * @returns {T}
+ */
+function trust(value) {
+  if (value === undefined || value === null) {
+    throw new Error(`Expected a value, but got ${value}.`)
+  }
+  return value
 }

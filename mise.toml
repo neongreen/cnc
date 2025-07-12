@@ -2,6 +2,7 @@ settings.python.uv_venv_auto = true
 
 [tools]
 uv = "latest"
+deno = "latest"
 
 [tasks.dev]
 description = "Start a dev server"
@@ -16,3 +17,7 @@ run = "uv run app.py"
 [tasks.pyright]
 description = "Run type checks on Python"
 run = "uv run pyright --project ."
+
+[tasks.checkjs]
+description = "Run type checks on JavaScript"
+run = "deno check --allow-import graph.js"

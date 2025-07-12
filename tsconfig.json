@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "ES2015",
+      "DOM"
+    ],
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "module": "preserve"
+  },
+  "typeAcquisition": {
+    "enable": true
+  },
+  "include": [
+    "graph.js"
+  ]
+}
