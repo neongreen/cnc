@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hive</title>
+  <style>
+    html {
+      font-size: 14px;
+    }
+
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+
+    table {
+      width: auto;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 0.25rem 0.5rem;
+      text-align: center;
+      min-width: 4rem;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .date-text {
+      color: gray;
+      font-size: 0.75rem;
+    }
+
+    .score-text {
+      font-size: 1rem;
+    }
+
+    .win-cell {
+      background-color: #d4edda;
+    }
+
+    .loss-cell {
+      background-color: #f8d7da;
+    }
+
+    .self-match-cell {
+      background-color: #ddd;
+    }
+
+    #graph-svg {
+      height: "{{ graph_height }}px";
+      border: 1px solid #ccc;
+    }
+
+    .node {
+      stroke-width: 2px;
+      opacity: 0.5;
+    }
+
+    .node-text {
+      font-size: 13px;
+      font-weight: bold;
+      text-anchor: middle;
+      dominant-baseline: central;
+      color: #333;
+      /* For better visibility */
+      text-shadow: 0px 0px 8px rgba(255, 255, 255, 1);
+    }
+
+
+    .edge {
+      fill: none;
+      opacity: 0.5;
+      stroke-width: 2.5px;
+    }
+
+    .pear-link {
+      text-decoration: none;
+      color: inherit;
+      border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Hive</h1>
+  <p>
+    Source on GitHub:
+    <a href="https://github.com/neongreen/cnc" target="_blank">neongreen/cnc</a>
+  </p>
+
+  <h2>Lifetime scores</h2>
+  <p>Scores are given for <i>row player – column player</i>.</p>
+  <p>Total players: {{ num_participants }}</p>
+  <p><strong>Note: I didn't go through all the matches, just one match per person for now (in most cases).</strong>
+  </p>
+  <p>
+    Completion rate: {{ pairings_done }} / {{ total_possible_pairings }} <a href="https://en.wikipedia.org/wiki/Pear"
+      class="pear-link">pearings</a> ({{ completion_rate }}% done)
+  </p>
+  {{ table_content | safe }}
+
+  <h2>The graph</h2>
+  <p>
+    An arrow from A to B means A has a winning lifetime score against B.
+  </p>
+  <p>
+    The graph is sorted in topological order.
+  </p>
+
+  <svg id="graph-svg"></svg>
+
+  <script type="module">
+    import { drawGraph } from './graph.js';
+    const graphData = {{ graph_data | safe }};
+    const levelsData = {{ levels_data | safe }};
+    drawGraph(graphData, {{ graph_height }}, levelsData);
+  </script>
+</body>
+
+</html>

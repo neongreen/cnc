@@ -1,0 +1,82 @@
+[players.emily]
+nick = "Emily"
+hivegame = "ParathaBread"
+
+[players.tamp]
+nick = "Tamp"
+hivegame = "antTenna"
+
+[players.rick]
+nick = "Rick"
+hivegame = "VCube1003"
+
+[players.yew]
+nick = "Yew"
+hivegame = "Yew"
+
+[players.chez]
+nick = "Chezmozis"
+hivegame = "Chezmozis"
+
+[players.momoh]
+nick = "Momoh"
+hivegame = "Momoh"
+
+[players.csridge]
+nick = "jsaidoru"
+hivegame = "csridge"
+
+[[games]]
+date = "2025-07-27"
+players = ["emily", "tamp"]
+result = "p1"
+link = "https://hivegame.com/game/UeRuZqzitXox"
+rated = false
+
+[[games]]
+date = "2025-07-27"
+players = ["emily", "rick"]
+result = "p1"
+link = "https://hivegame.com/game/JKDz2yPW15V2"
+rated = false
+
+[[games]]
+players = ["emily", "yew"]
+result = "p1"
+link = "https://hivegame.com/game/8BiRJEhRELnh"
+rated = false
+
+[[games]]
+players = ["emily", "chez"]
+result = "p1"
+link = "https://hivegame.com/game/aC6XAOsLuQYl"
+rated = true
+control = "10+10"
+
+[[games]]
+players = ["emily", "momoh"]
+result = "p1"
+link = "https://hivegame.com/game/bzUVP-_lHe"
+rated = true
+control = "5+0"
+
+[[games]]
+players = ["emily", "csridge"]
+result = "p1"
+link = "https://hivegame.com/game/ZFM92KNyVZ"
+rated = true
+control = "10+0"
+
+[[games]]
+players = ["emily", "rick"]
+result = "p1"
+link = "https://hivegame.com/game/gVgNSMzCW1"
+rated = true
+control = "5+3"
+
+[[games]]
+players = ["emily", "rick"]
+result = "p1"
+link = "https://hivegame.com/game/ZFaMPZpo5p"
+rated = true
+control = "10+10"
