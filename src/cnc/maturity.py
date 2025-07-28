@@ -14,6 +14,7 @@ from cnc.graph import (
     topological_sort_participants,
 )
 from cnc.utils import sort_tuple
+from cnc.maturity_ratings import clamp, expected_score
 
 
 @dataclass
@@ -21,6 +22,9 @@ class MaturityPlayerStats:
     name: str
     wins: int
     losses: int
+    elo: float = 1500       # Default ELO rating for new players
+    k_factor: float = 40  # K-factor for rating updates. Clamped between 40 and 18.
+    total_matches: int = 0
 
 
 @dataclass
@@ -50,6 +54,29 @@ def load_maturity_data(file_path: Path) -> list[MaturityMatchResult]:
         )
     return results
 
+def update_elo(
+    p1: MaturityPlayerStats, p2: MaturityPlayerStats,
+    score1: int, score2: int
+) -> tuple[MaturityPlayerStats, MaturityPlayerStats]:
+    """Update ELO ratings for two players based on their scores."""
+    # Calculate actual and expected scores
+    expected1 = expected_score(p1.elo, p2.elo)
+    expected2 = expected_score(p2.elo, p1.elo)
+    score_rate_1 = score1 / (score1 + score2) # Convert to score%
+    score_rate_2 = score2 / (score1 + score2)
+
+    # Update ratings
+    p1.elo += p1.k_factor * (score_rate_1 - expected1)
+    p2.elo += p2.k_factor * (score_rate_2 - expected2)
+
+    # Update total matches and K-factors
+    p1.k_factor = clamp(250 / pow(p1.total_matches + 96, 0.4), 18, 40)
+    p2.k_factor = clamp(250 / pow(p2.total_matches + 96, 0.4), 18, 40)
+    p1.total_matches += 1
+    p2.total_matches += 1
+
+    return (p1, p2)
+
 
 def calculate_maturity_player_stats(
     match_dict: dict[tuple[str, str], list[MaturityMatchResult]],
@@ -63,6 +90,12 @@ def calculate_maturity_player_stats(
         for match in match_dict[key]:
             p1, p2 = match.player1, match.player2
             score1, score2 = match.score1, match.score2
+
+            p1_stats = stats[p1]
+            p2_stats = stats[p2]
+            updated_p1, updated_p2 = update_elo(p1_stats, p2_stats, score1, score2)
+            stats[p1] = updated_p1
+            stats[p2] = updated_p2
 
             if score1 > score2:
                 stats[p1].wins += 1
@@ -108,6 +141,13 @@ def generate_maturity_html(matches: list[MaturityMatchResult]) -> str:
         if total_possible_pairings > 0
         else 0
     )
+
+    sorted_participants_stats = sorted(
+        sorted_participants_stats, key=lambda x: (-x.elo, -x.wins, x.losses, x.name)
+    )
+    # for stats in sorted_participants_stats:
+    #    stats.elo = round(stats.elo, 2)
+    #    print(f"{stats.name:10}: {stats.elo:6} ELO, {stats.wins:2}W-{stats.losses:2}L, {stats.total_matches:2} matches")
 
     del participants  # No longer needed after this point
 
@@ -201,3 +241,7 @@ def generate_maturity_html(matches: list[MaturityMatchResult]) -> str:
         completion_rate=f"{completion_rate:.2f}",
         num_participants=num_participants,
     )
+
+# root = Path(__file__).parent.parent.parent
+# maturity = load_maturity_data(root / "data" / "maturity.csv")
+# generate_maturity_html(maturity)
