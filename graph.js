@@ -259,18 +259,50 @@ function drawTieEdges(svg, graphData, radius) {
  * @param {number} width - Available width for layout.
  * @param {number} height - Available height for layout.
  * @param {Array<string>} palette - Array of colors for levels.
+ * @param {Set<string>} inactiveSet - Set of node IDs that are inactive.
+ * @param {number} radius - Node radius in pixels.
  * @returns {{nodePositions: Map<string,{x:number,y:number}>, nodeColors: Map<string,string>}}
  */
-function computeNodeLayout(levels, width, height, palette) {
+function computeNodeLayout(
+  levels,
+  width,
+  height,
+  palette,
+  inactiveSet,
+  radius
+) {
   const nodePositions = new Map()
   const nodeColors = new Map()
   levels.forEach((level, levelIndex) => {
     const x = (levelIndex + 0.5) * (width / levels.length)
-    level.forEach((nodeName, nodeIndex) => {
-      const y = (nodeIndex + 0.5) * (height / level.length)
-      nodePositions.set(nodeName, { x, y })
-      nodeColors.set(nodeName, palette[levelIndex % palette.length])
-    })
+    const activeIds = level.filter((id) => !inactiveSet.has(id))
+    const inactiveIds = level.filter((id) => inactiveSet.has(id))
+
+    const activeCount = activeIds.length
+    const inactiveCount = inactiveIds.length
+
+    // 1) Place actives as if only they existed (true centering)
+    let maxActiveY = 0
+    if (activeCount > 0) {
+      const stepActive = height / activeCount
+      activeIds.forEach((nodeName, nodeIndex) => {
+        const y = (nodeIndex + 0.5) * stepActive
+        nodePositions.set(nodeName, { x, y })
+        nodeColors.set(nodeName, palette[levelIndex % palette.length])
+        if (y > maxActiveY) maxActiveY = y
+      })
+    }
+
+    // 2) Place inactives glued to the bottom of the graph, stacked upward
+    if (inactiveCount > 0) {
+      const yFloor = height - radius - 4
+      const spacing = radius * 2 + 8
+      inactiveIds.forEach((nodeName, j) => {
+        const y = yFloor - j * spacing
+        nodePositions.set(nodeName, { x, y })
+        nodeColors.set(nodeName, palette[levelIndex % palette.length])
+      })
+    }
   })
   return { nodePositions, nodeColors }
 }
@@ -362,11 +394,16 @@ export function drawGraph(graphData, graphHeight, levels) {
     "#353f50", // blueish gray
   ]
   console.log("Calculating node positions...")
+  const inactiveSet = new Set(
+    graphData.nodes.filter((n) => n.inactive).map((n) => n.id)
+  )
   const { nodePositions, nodeColors } = computeNodeLayout(
     levels,
     width,
     height,
-    colorPalette
+    colorPalette,
+    inactiveSet,
+    radius
   )
 
   setFixedPositions(graphData.nodes, nodePositions)
