@@ -7,7 +7,11 @@ import shutil
 import glob
 
 from cnc.hive import generate_hive_html, load_hive_data
-from cnc.maturity import generate_maturity_html, load_maturity_data
+from cnc.maturity import (
+    generate_maturity_html,
+    load_maturity_data,
+    load_maturity_players,
+)
 
 
 root = Path(__file__).parent.parent.parent
@@ -38,9 +42,12 @@ with app.app_context():
 
     # maturity matches
     maturity = load_maturity_data(root / "data" / "maturity.csv")
+    maturity_inactive = load_maturity_players(root / "data" / "maturity-players.toml")
 
     maturity_output_path = output_dir / "index.html"
-    open(maturity_output_path, "w").write(generate_maturity_html(maturity))
+    open(maturity_output_path, "w").write(
+        generate_maturity_html(maturity, inactive_players=maturity_inactive)
+    )
     print(f"Generated maturity HTML at {maturity_output_path}")
 
     # hive

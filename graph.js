@@ -4,6 +4,7 @@ import * as d3 from "https://esm.sh/d3"
  * @typedef {object} Node
  * @property {string} id - The unique identifier for the node.
  * @property {string} name - The name of the node.
+ * @property {boolean} [inactive] - Whether the player is inactive.
  * @property {number} x - The x-coordinate of the node.
  * @property {number} y - The y-coordinate of the node.
  * @property {number} fx - The fixed x-coordinate of the node.
@@ -83,8 +84,12 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
     .append("circle")
     .attr("class", "node")
     .attr("r", radius)
-    .attr("fill", (d) => trust(nodeColors.get(d.id)))
-    .attr("stroke", (d) => darkenColor(trust(nodeColors.get(d.id)), 0.2))
+    .attr("fill", (d) => (d.inactive ? "#cccccc" : trust(nodeColors.get(d.id))))
+    .attr("stroke", (d) =>
+      d.inactive
+        ? darkenColor("#cccccc", 0.2)
+        : darkenColor(trust(nodeColors.get(d.id)), 0.2)
+    )
 
   const nodeText = svg
     .append("g")
@@ -93,6 +98,7 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
     .enter()
     .append("text")
     .attr("class", "node-text")
+    .attr("fill", (d) => (d.inactive ? "#666666" : "#000000"))
     .text((d) => d.name)
 
   node.attr("cx", (d) => d.x).attr("cy", (d) => d.y)

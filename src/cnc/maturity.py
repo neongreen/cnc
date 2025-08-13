@@ -6,6 +6,7 @@ from babel import Locale
 from babel.dates import format_date
 
 import flask
+import tomllib
 
 from cnc.graph import (
     d3_graph_data,
@@ -76,7 +77,33 @@ def calculate_maturity_player_stats(
     return sorted_stats
 
 
-def generate_maturity_html(matches: list[MaturityMatchResult]) -> str:
+def load_maturity_players(file_path: Path) -> set[str]:
+    """Load maturity players metadata from TOML and return a set of inactive player names.
+
+    The TOML format is expected to be tables keyed by player id/name, e.g.:
+
+        [amg]
+        status = "inactive"
+
+    Any player table with `status = "inactive"` is considered inactive.
+    """
+    inactive: set[str] = set()
+    try:
+        with file_path.open("rb") as f:
+            data = tomllib.load(f)
+        for name, meta in data.items():
+            if isinstance(meta, dict) and meta.get("status") == "inactive":
+                inactive.add(name)
+    except FileNotFoundError:
+        # No metadata file; treat everyone as active
+        pass
+    return inactive
+
+
+def generate_maturity_html(
+    matches: list[MaturityMatchResult],
+    inactive_players: set[str] | None = None,
+) -> str:
     # Create a dictionary to store match data for quick lookup
     match_dict: dict[tuple[str, str], list[MaturityMatchResult]] = {}
     for match in matches:
@@ -189,6 +216,13 @@ def generate_maturity_html(matches: list[MaturityMatchResult]) -> str:
         players=participants_list,
         results=matches,
     )
+
+    # Mark inactive players on nodes so the frontend can style them.
+    if inactive_players:
+        for node in graph_data.nodes:
+            node_id = node.get("id")
+            if isinstance(node_id, str) and node_id in inactive_players:
+                node["inactive"] = True
 
     return flask.render_template(
         "index.html.j2",
