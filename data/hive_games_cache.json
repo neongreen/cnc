@@ -2675,6 +2675,506 @@
     "@Chezmosis|@JijiDied": {
       "last_fetch": "2025-08-17 20:51:23.194528",
       "games": []
+    },
+    "@emily|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:34.375967",
+      "games": [
+        {
+          "game_id": "yyNWrvs_AvIs",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "emily",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-16 12:29:39.395482+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        }
+      ]
+    },
+    "@nokamute-easy|@ParathaBread": {
+      "last_fetch": "2025-08-17 21:04:34.521965",
+      "games": []
+    },
+    "@antTenna|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:34.678946",
+      "games": []
+    },
+    "@im0elobro|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:34.833899",
+      "games": []
+    },
+    "@nokamute-easy|@VCube1003": {
+      "last_fetch": "2025-08-17 21:04:34.993340",
+      "games": []
+    },
+    "@nokamute-easy|@Yew": {
+      "last_fetch": "2025-08-17 21:04:35.194082",
+      "games": [
+        {
+          "game_id": "j2LAlj3B1S28",
+          "finished": true,
+          "white_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-17 04:35:49.432362+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "zARACDPk3tIk",
+          "finished": true,
+          "white_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Resigned",
+          "created_at": "2025-08-17 04:32:46.983812+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "E75meOjiBdx-",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-17 04:30:57.397395+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "CCDsOnDUoe5p",
+          "finished": true,
+          "white_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-17 04:28:47.089095+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "oA4EeKm07BGG",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Resigned",
+          "created_at": "2025-08-10 04:54:37.573578+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "YusGp1_FfO09",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-10 04:49:15.306747+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "c1r00rJyeZcS",
+          "finished": true,
+          "white_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-10 04:48:08.458003+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "vc0reIBryl9f",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-10 04:46:03.889293+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "H4lN56daQbcH",
+          "finished": true,
+          "white_player": {
+            "username": "Yew",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-10 04:43:26.573329+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        }
+      ]
+    },
+    "@Chezmosis|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:35.370945",
+      "games": []
+    },
+    "@Momoh|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:35.553186",
+      "games": []
+    },
+    "@nokamute-easy|@vivid": {
+      "last_fetch": "2025-08-17 21:04:35.725703",
+      "games": []
+    },
+    "@nokamute-easy|@sted": {
+      "last_fetch": "2025-08-17 21:04:35.902234",
+      "games": []
+    },
+    "@iwanakeyboard|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:36.078113",
+      "games": []
+    },
+    "@csridge|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:36.244966",
+      "games": []
+    },
+    "@nokamute-easy|@Stickbug": {
+      "last_fetch": "2025-08-17 21:04:36.428106",
+      "games": []
+    },
+    "@nokamute-easy|@Zxelpski": {
+      "last_fetch": "2025-08-17 21:04:36.584170",
+      "games": []
+    },
+    "@nokamute-easy|@Surviv34": {
+      "last_fetch": "2025-08-17 21:04:36.768657",
+      "games": []
+    },
+    "@nokamute-easy|@silvy0711": {
+      "last_fetch": "2025-08-17 21:04:36.963357",
+      "games": [
+        {
+          "game_id": "qwsLnxie1Y_k",
+          "finished": true,
+          "white_player": {
+            "username": "silvy0711",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-16 12:45:21.606861+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "jHLcEDSRysy2",
+          "finished": true,
+          "white_player": {
+            "username": "silvy0711",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-16 12:26:33.086974+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "rVFIqbKsl1Ie",
+          "finished": true,
+          "white_player": {
+            "username": "silvy0711",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-16 11:18:59.287689+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "dIa703mapXMf",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "silvy0711",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-16 11:16:53.906743+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "MaAIWG4grZAs",
+          "finished": true,
+          "white_player": {
+            "username": "silvy0711",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Resigned",
+          "created_at": "2025-08-16 11:02:13.390191+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        }
+      ]
+    },
+    "@nokamute-easy|@Sealandball": {
+      "last_fetch": "2025-08-17 21:04:37.149056",
+      "games": [
+        {
+          "game_id": "hK10-RoDwtR2",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "Sealandball",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-16 12:40:39.789068+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        },
+        {
+          "game_id": "z7L8tf9yuxXS",
+          "finished": true,
+          "white_player": {
+            "username": "Sealandball",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "Black"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-16 12:36:23.967533+00:00",
+          "speed": "Untimed",
+          "game_type": "MLP"
+        }
+      ]
+    },
+    "@kk|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:37.304106",
+      "games": []
+    },
+    "@almostgood|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:37.465718",
+      "games": []
+    },
+    "@Canis327O|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:37.619358",
+      "games": []
+    },
+    "@Jejdjfjc|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:37.776634",
+      "games": []
+    },
+    "@JijiDied|@nokamute-easy": {
+      "last_fetch": "2025-08-17 21:04:37.941958",
+      "games": []
     }
   }
 }

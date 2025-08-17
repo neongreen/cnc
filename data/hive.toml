@@ -76,3 +76,7 @@ hivegame = ["Jejdjfjc"]
 [players.smear]
 display_name = "Smear"
 hivegame = ["JijiDied"]
+
+[players.easybot]
+display_name = "🤖 easy bot"
+hivegame = ["nokamute-easy"]
