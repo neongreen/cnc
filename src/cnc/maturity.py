@@ -14,7 +14,10 @@ from cnc.graph import (
     PairingResult,
     topological_sort_participants,
 )
-from cnc.utils import sort_tuple
+from cnc.utils import sort_tuple, get_logger
+
+# Get logger for this module
+logger = get_logger("maturity")
 
 
 @dataclass
@@ -32,36 +35,69 @@ class MaturityMatchResult(PairingResult):
 
 
 def load_maturity_data(file_path: Path) -> list[MaturityMatchResult]:
-    with file_path.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-    results = []
-    for row in rows:
-        score1 = int(row["score1"])
-        score2 = int(row["score2"])
-        results.append(
-            MaturityMatchResult(
-                date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
-                player1=row["player1"],
-                player2=row["player2"],
-                result="p1" if score1 > score2 else "p2" if score1 < score2 else "draw",
-                score1=score1,
-                score2=score2,
-            )
+    """Load maturity match data from CSV file."""
+    logger.info(f"Loading maturity data from {file_path}")
+
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        logger.debug(f"Read {len(rows)} rows from CSV")
+
+        results = []
+        for i, row in enumerate(rows):
+            try:
+                score1 = int(row["score1"])
+                score2 = int(row["score2"])
+                result = (
+                    "p1" if score1 > score2 else "p2" if score1 < score2 else "draw"
+                )
+
+                results.append(
+                    MaturityMatchResult(
+                        date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
+                        player1=row["player1"],
+                        player2=row["player2"],
+                        result=result,
+                        score1=score1,
+                        score2=score2,
+                    )
+                )
+
+                logger.debug(
+                    f"Row {i + 1}: {row['player1']} vs {row['player2']} - {result} ({score1}-{score2})"
+                )
+
+            except (ValueError, KeyError) as e:
+                logger.warning(f"Error processing row {i + 1}: {e}, row data: {row}")
+                continue
+
+        logger.info(f"Successfully loaded {len(results)} maturity match results")
+        return results
+
+    except Exception as e:
+        logger.error(
+            f"Error loading maturity data from {file_path}: {e}", exc_info=True
         )
-    return results
+        return []
 
 
 def calculate_maturity_player_stats(
     match_dict: dict[tuple[str, str], list[MaturityMatchResult]],
     players: set[str],
 ) -> list[MaturityPlayerStats]:
+    """Calculate win/loss statistics for each player."""
+    logger.debug(f"Calculating stats for {len(players)} players")
+
     stats: dict[str, MaturityPlayerStats] = {
         p: MaturityPlayerStats(name=p, wins=0, losses=0) for p in players
     }
 
+    total_matches = 0
     for key in match_dict:
         for match in match_dict[key]:
+            total_matches += 1
             p1, p2 = match.player1, match.player2
             score1, score2 = match.score1, match.score2
 
@@ -74,6 +110,10 @@ def calculate_maturity_player_stats(
 
     # Sort participants: highest wins first, then highest losses last, then by name
     sorted_stats = sorted(stats.values(), key=lambda x: (-x.wins, x.losses, x.name))
+
+    logger.debug(f"Processed {total_matches} matches")
+    logger.info(f"Player stats calculated for {len(sorted_stats)} players")
+
     return sorted_stats
 
 
@@ -87,16 +127,29 @@ def load_maturity_players(file_path: Path) -> set[str]:
 
     Any player table with `status = "inactive"` is considered inactive.
     """
+    logger.info(f"Loading maturity players metadata from {file_path}")
+
     inactive: set[str] = set()
     try:
         with file_path.open("rb") as f:
             data = tomllib.load(f)
+
+        logger.debug(f"Loaded TOML data with {len(data)} entries")
+
         for name, meta in data.items():
             if isinstance(meta, dict) and meta.get("status") == "inactive":
                 inactive.add(name)
+                logger.debug(f"Marked player '{name}' as inactive")
+
+        logger.info(f"Found {len(inactive)} inactive players")
+
     except FileNotFoundError:
+        logger.info("No metadata file found; treating all players as active")
         # No metadata file; treat everyone as active
         pass
+    except Exception as e:
+        logger.error(f"Error loading maturity players metadata: {e}", exc_info=True)
+
     return inactive
 
 

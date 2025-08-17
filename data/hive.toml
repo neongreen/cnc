@@ -1,82 +1,78 @@
 [players.emily]
-nick = "Emily"
-hivegame = "ParathaBread"
+display_name = "Emily"
+hivegame = ["emily", "ParathaBread"]
+hivegame_current = "emily"
 
 [players.tamp]
-nick = "Tamp"
-hivegame = "antTenna"
+display_name = "Tamp"
+hivegame = ["antTenna", "im0elobro"]
+hivegame_current = "antTenna"
 
 [players.rick]
-nick = "Rick"
-hivegame = "VCube1003"
+display_name = "Rick"
+hivegame = ["VCube1003"]
 
 [players.yew]
-nick = "Yew"
-hivegame = "Yew"
+display_name = "Yew"
+hivegame = ["Yew"]
 
 [players.chez]
-nick = "Chezmozis"
-hivegame = "Chezmozis"
+display_name = "Chez"
+hivegame = ["Chezmosis"]
 
 [players.momoh]
-nick = "Momoh"
-hivegame = "Momoh"
+display_name = "Momoh"
+hivegame = ["Momoh"]
 
-[players.csridge]
-nick = "jsaidoru"
-hivegame = "csridge"
+[players.vivid]
+display_name = "vivid"
+hivegame = ["vivid"]
 
-[[games]]
-date = "2025-07-27"
-players = ["emily", "tamp"]
-result = "p1"
-link = "https://hivegame.com/game/UeRuZqzitXox"
-rated = false
+[players.sted]
+display_name = "sted"
+hivegame = ["sted"]
 
-[[games]]
-date = "2025-07-27"
-players = ["emily", "rick"]
-result = "p1"
-link = "https://hivegame.com/game/JKDz2yPW15V2"
-rated = false
+[players.jsaidoru]
+display_name = "jsaidoru"
+hivegame = ["iwanakeyboard", "csridge"]
+hivegame_current = "iwanakeyboard"
 
-[[games]]
-players = ["emily", "yew"]
-result = "p1"
-link = "https://hivegame.com/game/8BiRJEhRELnh"
-rated = false
+[players.kyobir]
+display_name = "Kyobir"
+hivegame = ["Stickbug"]
 
-[[games]]
-players = ["emily", "chez"]
-result = "p1"
-link = "https://hivegame.com/game/aC6XAOsLuQYl"
-rated = true
-control = "10+10"
+[players.kuyi]
+display_name = "Kuyi"
+hivegame = ["Zxelpski"]
 
-[[games]]
-players = ["emily", "momoh"]
-result = "p1"
-link = "https://hivegame.com/game/bzUVP-_lHe"
-rated = true
-control = "5+0"
+[players.surviv]
+display_name = "Surviv"
+hivegame = ["Surviv34"]
 
-[[games]]
-players = ["emily", "csridge"]
-result = "p1"
-link = "https://hivegame.com/game/ZFM92KNyVZ"
-rated = true
-control = "10+0"
+[players.silvy]
+display_name = "Silvy"
+hivegame = ["silvy0711"]
 
-[[games]]
-players = ["emily", "rick"]
-result = "p1"
-link = "https://hivegame.com/game/gVgNSMzCW1"
-rated = true
-control = "5+3"
+[players.sealand]
+display_name = "Sealand"
+hivegame = ["Sealandball"]
 
-[[games]]
-players = ["emily", "rick"]
-result = "p1"
-link = "https://hivegame.com/game/ZFaMPZpo5p"
-rated = true
-control = "10+10"
+[players.kk]
+display_name = "!kk!"
+hivegame = ["kk"]
+
+[players.sjoerd]
+display_name = "Sjoerd"
+hivegame = ["almostgood"]
+
+[players.hayden]
+display_name = "Hayden"
+hivegame = ["Canis327O"]
+
+[players.mrsir]
+display_name = "MrSir"
+hivegame = ["Jejdjfjc"]
+
+[players.smear]
+display_name = "Smear"
+hivegame = ["JijiDied"]

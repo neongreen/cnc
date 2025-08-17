@@ -2,13 +2,16 @@ from dataclasses import dataclass
 from graphlib import TopologicalSorter
 from typing import Literal, Sequence
 
-from cnc.utils import sort_tuple
+from cnc.utils import sort_tuple, get_logger
+
+# Get logger for this module
+logger = get_logger("graph")
 
 
-def topological_sort_participants(
-    outcomes: Sequence[tuple[str, str]],
-    participants: set[str],
-) -> list[list[str]]:
+def topological_sort_participants[T](
+    outcomes: Sequence[tuple[T, T]],
+    participants: set[T],
+) -> list[list[T]]:
     """
     Perform a topological sort of participants based on match outcomes.
 
@@ -22,6 +25,9 @@ def topological_sort_participants(
         A list of lists, where each inner list contains participants that are at the same "level" in the ranking.
         The first list contains the top-ranked participants (unbeaten), etc.
     """
+    logger.debug(
+        f"Starting topological sort for {len(participants)} participants with {len(outcomes)} outcomes"
+    )
 
     graph = {}
 
@@ -32,6 +38,8 @@ def topological_sort_participants(
     # Add dependencies based on outcomes
     for winner, loser in outcomes:
         graph[loser].add(winner)
+
+    logger.debug(f"Built dependency graph with {len(graph)} nodes")
 
     # Build a reachability graph to check if there's any path between nodes
     def has_path(start, end, graph):
@@ -67,6 +75,8 @@ def topological_sort_participants(
     ts = TopologicalSorter(graph)
     levels = []  # Store the levels for graph visualization
     ts.prepare()
+
+    logger.debug("Starting topological sort processing")
 
     while ts.is_active():
         # Get nodes that are ready to be processed (no remaining dependencies)
@@ -117,26 +127,28 @@ def topological_sort_participants(
 
 
 @dataclass
-class D3GraphEdge:
-    source: str
-    target: str
+class D3GraphEdge[IdT]:
+    source: IdT
+    target: IdT
 
 
 @dataclass
-class D3GraphData:
-    nodes: list[dict]
-    edges: list[D3GraphEdge]
-    ties: list[D3GraphEdge]
+class D3GraphData[IdT]:
+    nodes: list[dict[str, IdT]]
+    edges: list[D3GraphEdge[IdT]]
+    ties: list[D3GraphEdge[IdT]]
 
 
 @dataclass
-class PairingResult:
-    player1: str
-    player2: str
+class PairingResult[IdT]:
+    player1: IdT
+    player2: IdT
     result: Literal["p1", "p2", "draw"]
 
 
-def pairing_outcomes(matches: Sequence[PairingResult]) -> list[tuple[str, str]]:
+def pairing_outcomes[IdT](
+    matches: Sequence[PairingResult[IdT]],
+) -> list[tuple[IdT, IdT]]:
     """Extract match outcomes as tuples of (winner, loser). If a match is a draw, it is ignored."""
     outcomes = []
     for match in matches:
@@ -147,9 +159,9 @@ def pairing_outcomes(matches: Sequence[PairingResult]) -> list[tuple[str, str]]:
     return outcomes
 
 
-def d3_graph_data(
-    players: Sequence[str],
-    results: Sequence[PairingResult],
+def d3_graph_data[IdT](
+    players: Sequence[IdT],
+    results: Sequence[PairingResult[IdT]],
 ) -> D3GraphData:
     """Generate D3.js graph data"""
 
@@ -157,7 +169,7 @@ def d3_graph_data(
     nodes = [{"id": name, "name": name} for name in players]
     edges = []
 
-    ties: set[tuple[str, str]] = set()
+    ties: set[tuple[IdT, IdT]] = set()
 
     for pairing in results:
         if pairing.result == "draw":

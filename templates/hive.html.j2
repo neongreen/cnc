@@ -88,6 +88,50 @@
       color: inherit;
       border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
     }
+
+    .matchup-table {
+      margin-top: 20px;
+      margin-bottom: 40px;
+    }
+
+    .matchup-table th,
+    .matchup-table td {
+      border: 1px solid #ddd;
+      padding: 0.5rem;
+      text-align: center;
+      min-width: 3rem;
+    }
+
+    .matchup-table .self-match {
+      background-color: #ddd;
+      color: #666;
+    }
+
+    .matchup-table .no-matches {
+      background-color: #f8f9fa;
+      color: #6c757d;
+    }
+
+    .matchup-table .has-matches {
+      background-color: #e3f2fd;
+      font-weight: bold;
+    }
+
+    .player-link {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .player-link:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+
+    .player-link:visited {
+      color: #6f42c1;
+    }
   </style>
 </head>
 
@@ -98,20 +142,22 @@
     <a href="https://github.com/neongreen/cnc" target="_blank">neongreen/cnc</a>
   </p>
 
-  <h2>Lifetime scores</h2>
+  <h2>Game counts between players</h2>
+  <p>
+    This table shows the number of games played between each pair of players.
+    Format: <b>rated (+ unrated)</b>.
+  </p>
+  {{ game_counts_table | safe }}
+
+  <h2>Lifetime scores (Rated games only)</h2>
   <p>Scores are given for <i>row player – column player</i>.</p>
   <p>Total players: {{ num_participants }}</p>
-  <p><strong>Note: I didn't go through all the matches, just one match per person for now (in most cases).</strong>
-  </p>
-  <p>
-    Completion rate: {{ pairings_done }} / {{ total_possible_pairings }} <a href="https://en.wikipedia.org/wiki/Pear"
-      class="pear-link">pearings</a> ({{ completion_rate }}% done)
-  </p>
+  <p><strong>Note: Only rated games are counted in the lifetime scores below.</strong></p>
   {{ table_content | safe }}
 
-  <h2>The graph</h2>
+  <h2>The graph (Rated games only)</h2>
   <p>
-    An arrow from A to B means A has a winning lifetime score against B.
+    An arrow from A to B means A has a winning lifetime score against B in rated games.
   </p>
   <p>
     The graph is sorted in topological order.

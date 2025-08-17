@@ -21,3 +21,11 @@ run = "uv run pyright --project ."
 [tasks.checkjs]
 description = "Run type checks on JavaScript"
 run = "deno check --allow-import graph.js"
+
+[tasks.fetch-hive]
+description = "Fetch and cache Hive game data"
+run = "uv run src/cnc/fetch_hive_games.py"
+
+[tasks.fetch-hive-force]
+description = "Force refresh all Hive game data"
+run = "uv run src/cnc/fetch_hive_games.py --force"
