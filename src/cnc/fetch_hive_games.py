@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, NewType, Tuple
 from pydantic import BaseModel
+import structlog
 
 from cnc.hivegame import (
     HG_GameResponse,
@@ -18,10 +19,9 @@ from cnc.hivegame import (
     HivePlayerId,
     HivePlayerInfo,
 )
-from cnc.utils import get_logger
+from cnc.utils import setup_logging
 
-# Get logger for this module
-logger = get_logger("fetch_hive_games")
+logger = structlog.get_logger()
 
 PairingKey = NewType("PairingKey", str)
 """Key in the cache file, e.g. "@emily|@yew", with the nicks sorted alphabetically"""
@@ -87,10 +87,7 @@ def fetch_all_player_games_with_cache(
     ),  # if the cache for a pairing is older than this, fetch new games
 ) -> GameCache:
     """Fetch all games between all players, using cache when possible"""
-    logger.info(f"Starting game fetch with cache from {cache_file}")
-    logger.info(
-        f"Force refresh: {force_refresh}, stale threshold: {stale_seconds} seconds"
-    )
+    logger.debug("Starting game fetch", cache_file=str(cache_file))
 
     # Load existing cache if it exists
     cache = GameCache(pairings={})
@@ -102,7 +99,9 @@ def fetch_all_player_games_with_cache(
                 # Convert JSON data back to GameCache object using Pydantic
                 cache = GameCache.model_validate(cache_data)
 
-            logger.info(f"Loaded {len(cache.pairings)} pairings from existing cache")
+            logger.info(
+                "Loaded cache", games=sum(len(p.games) for p in cache.pairings.values())
+            )
 
         except Exception as e:
             logger.error(f"Error loading existing cache: {e}", exc_info=True)
@@ -113,9 +112,12 @@ def fetch_all_player_games_with_cache(
         else:
             logger.info("No existing cache file found, starting fresh")
 
+    had_to_fetch = False  # Whether we had to fetch any games
+    new_games = 0  # Number of new games fetched
+
     for (p1, p1_data), (p2, p2_data) in combinations(all_players.items(), 2):
         for p1_hivegame, p2_hivegame in product(p1_data.hivegame, p2_data.hivegame):
-            logger.debug(f"Processing @{p1_hivegame} vs @{p2_hivegame}")
+            logger.debug("Processing pairing", p1=p1_hivegame, p2=p2_hivegame)
             pairing_key = create_pairing_key(p1_hivegame, p2_hivegame)
             should_fetch = pairing_key not in cache.pairings or (
                 cache.pairings[pairing_key].last_fetch
@@ -123,8 +125,9 @@ def fetch_all_player_games_with_cache(
             )
 
             if should_fetch:
+                had_to_fetch = True
                 try:
-                    logger.info(f"Fetching games for {pairing_key}")
+                    logger.info("Fetching games", pairing_key=pairing_key)
                     games = fetch_games_between_players(p1_hivegame, p2_hivegame)
 
                     # Merge games into existing cache entry
@@ -132,28 +135,31 @@ def fetch_all_player_games_with_cache(
                         cache.pairings[pairing_key] = PairingCache(
                             last_fetch=datetime.now(), games=games
                         )
+                        new_games += len(games)
                     else:
-                        cache.pairings[pairing_key] = PairingCache(
-                            last_fetch=datetime.now(),
-                            # Deduplicate games by game_id
-                            games=list(
-                                {
-                                    g.game_id: g
-                                    for g in (cache.pairings[pairing_key].games + games)
-                                }.values()
-                            ),
+                        # Deduplicate games by game_id
+                        cached_games = cache.pairings[pairing_key].games
+                        updated_games = list(
+                            {g.game_id: g for g in (cached_games + games)}.values()
                         )
-
-                    logger.info(f"Fetched {len(games)} games for {pairing_key}")
+                        new_games += len(updated_games) - len(cached_games)
+                        cache.pairings[pairing_key] = PairingCache(
+                            last_fetch=datetime.now(), games=updated_games
+                        )
                 except Exception as e:
                     logger.error(
                         f"Error fetching games for {pairing_key}: {e}",
                         exc_info=True,
                     )
 
+    if had_to_fetch:
+        logger.info("Fetch summary", new_games=new_games)
+    else:
+        logger.info("Cache is not stale and there are no new pairings, skipping fetch")
+
     # Save updated cache
     try:
-        logger.info(f"Saving cache to {cache_file}")
+        logger.debug("Saving cache", cache_file=str(cache_file))
         cache_data = {
             "pairings": cache.pairings,
         }
@@ -171,7 +177,7 @@ def fetch_all_player_games_with_cache(
                 else str(obj),
             )
 
-        logger.info("Cache saved successfully")
+        logger.debug("Cache saved successfully")
 
     except Exception as e:
         logger.error(f"Error saving cache: {e}", exc_info=True)
@@ -181,13 +187,8 @@ def fetch_all_player_games_with_cache(
 
 def main():
     """Main function to fetch and cache Hive game data."""
-    # Set up logging first
-    from cnc.utils import setup_logging
 
-    logger = setup_logging(console_output=True)
-
-    logger.info("🎮 Hive Games Fetcher")
-    logger.info("=" * 50)
+    setup_logging()
 
     import argparse
 
@@ -214,66 +215,34 @@ def main():
     cache_file = project_root / args.cache_file
 
     if args.force:
-        logger.info("🔄 Force refresh mode - will fetch all pairings")
+        logger.info("Force refresh mode - will fetch all pairings")
     else:
-        logger.info(f"📅 Will refresh pairings older than {args.max_age} days")
-
-    logger.info(f"💾 Cache file: {cache_file}")
+        logger.info(f"Will refresh pairings older than {args.max_age} days")
 
     # Get all players
-    logger.info("📋 Loading player data...")
     all_players = get_all_players(project_root / "data" / "hive.toml")
-    logger.info(f"Found {len(all_players)} players")
 
     # Fetch games with caching
-    start_time = datetime.now()
     cache = fetch_all_player_games_with_cache(
         all_players,
         cache_file,
         force_refresh=args.force,
         stale_seconds=args.max_age * 60 * 60 * 24,
     )
-    end_time = datetime.now()
-
-    # Print summary
-    logger.info("=" * 50)
-    logger.info("📊 FETCH SUMMARY")
-    logger.info("=" * 50)
-
-    total_games = sum(
-        len(pairing_data.games) for pairing_data in cache.pairings.values()
-    )
-    active_pairings = sum(
-        1 for pairing_data in cache.pairings.values() if len(pairing_data.games) > 0
-    )
-
-    logger.info(f"Total pairings processed: {len(cache.pairings)}")
-    logger.info(f"Active pairings (with games): {active_pairings}")
-    logger.info(f"Total games cached: {total_games}")
-    logger.info(f"Time taken: {end_time - start_time}")
 
     # Show games per current player (aggregating across all nicks)
-    logger.info("👥 GAMES PER CURRENT PLAYER:")
-    for player_id in all_players.keys():
-        player_games = get_games_for_current_player(cache, all_players, player_id)
-        if player_games:
-            player_data = all_players[player_id]
-            nick_info = ", ".join(f"@{nick}" for nick in player_data.hivegame)
-            logger.info(f"  {player_id} ({nick_info}): {len(player_games)} games")
-
-    # Show some stats about recent games
-    logger.info("🎯 RECENT GAMES (last 30 days):")
-    cutoff_date = datetime.now() - timedelta(days=30)
-    recent_games = 0
-
-    for pairing_key, pairing_data in cache.pairings.items():
-        games = pairing_data.games
-        for game in games:
-            if game.created_at.replace(tzinfo=None) > cutoff_date:
-                recent_games += 1
-    logger.info(f"Games in last 30 days: {recent_games}")
-
-    logger.info("✨ Done!")
+    logger.info(
+        "Games per player",
+        **{
+            player_id: len(player_games)
+            for player_id in all_players.keys()
+            if (
+                player_games := get_games_for_current_player(
+                    cache, all_players, player_id
+                )
+            )
+        },
+    )
 
 
 if __name__ == "__main__":

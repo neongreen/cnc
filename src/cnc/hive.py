@@ -1,6 +1,7 @@
 from decimal import Decimal
 from pathlib import Path
 from typing import Literal
+import structlog
 
 import flask
 from pydantic import BaseModel
@@ -11,7 +12,7 @@ from cnc.graph import (
     pairing_outcomes,
     topological_sort_participants,
 )
-from cnc.utils import get_logger, pprint_dict, Pair
+from cnc.utils import pprint_dict, Pair
 from cnc.hivegame import (
     HG_GameResponse,
     HG_GameStatusFinished,
@@ -22,7 +23,7 @@ from cnc.hivegame import (
 from cnc.fetch_hive_games import GameCache
 
 # Get logger for this module
-logger = get_logger("hive")
+logger = structlog.get_logger()
 
 
 class HiveGameResult(BaseModel):

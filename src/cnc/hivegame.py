@@ -7,11 +7,12 @@ import cbor2
 import requests
 import tomllib
 from pydantic import BaseModel, RootModel
+import structlog
 
-from cnc.utils import get_logger, pprint_dict
+from cnc.utils import pprint_dict
 
-# Get logger for this module
-logger = get_logger("hivegame")
+logger = structlog.get_logger()
+
 
 HiveGameNick = NewType("HiveGameNick", str)
 """Nick on hivegame.com without @"""
@@ -120,11 +121,12 @@ def fetch_games_between_players(
     Returns:
         List of PlayerGameResult objects with game details
     """
-    logger.info(
-        f"Fetching games between {player1} and {player2}, max_games={max_games}"
+    logger.debug(
+        "Fetching games",
+        player1=player1,
+        player2=player2,
+        max_games=max_games,
     )
-    if start:
-        logger.info(f"Filtering games after {start}")
 
     # The API endpoint ID changes, so we need to discover it
     # For now, we'll use a known working ID from our testing
@@ -172,7 +174,7 @@ def fetch_games_between_players(
         if response.status_code == 200:
             # Decode CBOR response
             response_data = cbor2.loads(response.content)
-            logger.info(f"Received {len(response_data)} games from API")
+            logger.debug("Received games from API", count=len(response_data))
 
             for i, game in enumerate(response_data):
                 logger.debug(
@@ -198,8 +200,11 @@ def fetch_games_between_players(
         #         f"Filtered games: {original_count} -> {filtered_count} (after {start})"
         #     )
 
-        logger.info(
-            f"Successfully fetched {len(all_games)} games between {player1} and {player2}"
+        logger.debug(
+            "Successfully fetched games",
+            count=len(all_games),
+            player1=player1,
+            player2=player2,
         )
         return all_games
 
@@ -237,7 +242,7 @@ class HivePlayerInfo(BaseModel):
 
 def get_all_players(file_path: Path) -> dict[HivePlayerId, HivePlayerInfo]:
     """Get all players from the players section from hive.toml."""
-    logger.info(f"Loading players from {file_path}")
+    logger.debug("Loading players", file_path=str(file_path))
 
     try:
         with file_path.open("rb") as f:
@@ -247,12 +252,18 @@ def get_all_players(file_path: Path) -> dict[HivePlayerId, HivePlayerInfo]:
 
         # Add players from players section
         players_data = data.get("players", {})
-        logger.debug(f"Found {len(players_data)} players in configuration")
 
         for player_id, player_data in players_data.items():
             player_info[player_id] = HivePlayerInfo.model_validate(player_data)
 
-        logger.info(f"Successfully loaded {len(player_info)} players")
+        logger.info(
+            "Players in the config",
+            count=len(player_info),
+            players=sorted(p.display_name for p in player_info.values()),
+            all_hivegame_nicks=sorted(
+                f"@{nick}" for p in player_info.values() for nick in p.hivegame
+            ),
+        )
         return player_info
 
     except Exception as e:

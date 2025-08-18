@@ -6,16 +6,19 @@ from flask import Flask, send_from_directory
 import shutil
 import glob
 
+import structlog
+
+from cnc.utils import setup_logging
 from cnc.hive import generate_hive_html
 from cnc.maturity import (
     generate_maturity_html,
     load_maturity_data,
     load_maturity_players,
 )
-from cnc.utils import setup_logging
 
-# Set up logging (will use LOG_LEVEL environment variable if set)
-logger = setup_logging(console_output=True)
+logger = structlog.get_logger()
+
+setup_logging()
 
 root = Path(__file__).parent.parent.parent
 

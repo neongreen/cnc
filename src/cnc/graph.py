@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 from typing import Literal, Sequence
+import structlog
 
-from cnc.utils import sort_tuple, get_logger
+from cnc.utils import sort_tuple
 
 # Get logger for this module
-logger = get_logger("graph")
+logger = structlog.get_logger()
 
 
 def topological_sort_participants[T](
@@ -134,7 +135,7 @@ class D3GraphEdge[IdT]:
 
 @dataclass
 class D3GraphData[IdT]:
-    nodes: list[dict[str, IdT]]
+    nodes: list[dict]
     edges: list[D3GraphEdge[IdT]]
     ties: list[D3GraphEdge[IdT]]
 
@@ -162,7 +163,7 @@ def pairing_outcomes[IdT](
 def d3_graph_data[IdT](
     players: Sequence[IdT],
     results: Sequence[PairingResult[IdT]],
-) -> D3GraphData:
+) -> D3GraphData[IdT]:
     """Generate D3.js graph data"""
 
     # Create nodes and edges for D3.js

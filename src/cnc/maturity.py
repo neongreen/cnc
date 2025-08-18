@@ -4,6 +4,7 @@ from datetime import date, datetime
 from pathlib import Path
 from babel import Locale
 from babel.dates import format_date
+import structlog
 
 import flask
 import tomllib
@@ -14,10 +15,10 @@ from cnc.graph import (
     PairingResult,
     topological_sort_participants,
 )
-from cnc.utils import sort_tuple, get_logger
+from cnc.utils import sort_tuple
 
 # Get logger for this module
-logger = get_logger("maturity")
+logger = structlog.get_logger()
 
 
 @dataclass
