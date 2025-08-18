@@ -121,7 +121,7 @@ def fetch_games_between_players(
     Returns:
         List of PlayerGameResult objects with game details
     """
-    logger.debug(
+    logger.info(
         "Fetching games",
         player1=player1,
         player2=player2,

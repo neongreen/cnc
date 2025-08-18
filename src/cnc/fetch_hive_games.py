@@ -119,15 +119,30 @@ def fetch_all_player_games_with_cache(
         for p1_hivegame, p2_hivegame in product(p1_data.hivegame, p2_data.hivegame):
             logger.debug("Processing pairing", p1=p1_hivegame, p2=p2_hivegame)
             pairing_key = create_pairing_key(p1_hivegame, p2_hivegame)
-            should_fetch = pairing_key not in cache.pairings or (
-                cache.pairings[pairing_key].last_fetch
-                < datetime.now() - timedelta(seconds=stale_seconds)
-            )
+            should_fetch = False
+            if pairing_key not in cache.pairings:
+                logger.debug("Pairing not in cache, fetching", pairing_key=pairing_key)
+                should_fetch = True
+            else:
+                logger.debug(
+                    "Pairing in cache, checking if stale", pairing_key=pairing_key
+                )
+                last_fetch = cache.pairings[pairing_key].last_fetch
+                is_stale = last_fetch < datetime.now() - timedelta(
+                    seconds=stale_seconds
+                )
+                logger.debug(
+                    "Pairing is stale, fetching"
+                    if is_stale
+                    else "Pairing is not stale, skipping fetch",
+                    last_fetch=last_fetch.strftime("%Y-%m-%d %H:%M:%S"),
+                    stale_seconds=stale_seconds,
+                )
+                should_fetch = is_stale
 
             if should_fetch:
                 had_to_fetch = True
                 try:
-                    logger.info("Fetching games", pairing_key=pairing_key)
                     games = fetch_games_between_players(p1_hivegame, p2_hivegame)
 
                     # Merge games into existing cache entry
@@ -199,8 +214,8 @@ def main():
     parser.add_argument(
         "--max-age",
         type=int,
-        default=7,
-        help="Maximum age in days before refreshing (default: 7)",
+        default=0,
+        help="Maximum age in days before refreshing",
     )
     parser.add_argument(
         "--cache-file",
