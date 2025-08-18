@@ -18,7 +18,7 @@ from cnc.hivegame import (
     HG_GameStatusFinished,
     HivePlayerInfo,
     HivePlayerId,
-    get_all_players,
+    get_config,
 )
 from cnc.fetch_hive_games import GameCache
 
@@ -113,12 +113,17 @@ class Games:
 def calculate_game_counts_table(
     games: Games,
     all_players: dict[HivePlayerId, HivePlayerInfo],
+    skip_highlight: list[HivePlayerId],
 ) -> tuple[str, dict[HivePlayerId, PlayerGameCounts]]:
     """Generate a table showing game counts between players, sorted by total games
+
+    Args:
+        skip_highlight: do not highlight games by these players in the table
 
     Returns:
         Tuple of (HTML table, dict of player ID to PlayerGameCounts)
     """
+
     logger.info("Generating game counts table")
     logger.debug(
         f"Processing {len(games.games_dict)} game pairings for {len(all_players)} players"
@@ -193,9 +198,13 @@ def calculate_game_counts_table(
                         unrated_str = (
                             f" (+{unrated_count})" if unrated_count > 0 else ""
                         )
-                        table_html += (
-                            f'<td class="has-matches">{rated_count}{unrated_str}</td>'
+                        highlight_class = (
+                            ""
+                            if row_player_id in skip_highlight
+                            or col_player_id in skip_highlight
+                            else "highlighted"
                         )
+                        table_html += f'<td class="has-matches {highlight_class}">{rated_count}{unrated_str}</td>'
                 else:
                     table_html += '<td class="no-matches">0</td>'
 
@@ -265,7 +274,8 @@ def calculate_hive_player_total_stats(
 def generate_hive_html() -> str:
     # Get all players
     root = Path(__file__).parent.parent.parent
-    all_players = get_all_players(root / "data" / "hive.toml")
+    config = get_config(root / "data" / "hive.toml")
+    all_players = config.players
 
     # Load cached game data
     cache_file = root / "data" / "hive_games_cache.json"
@@ -281,7 +291,9 @@ def generate_hive_html() -> str:
     )
 
     # Generate game counts table
-    game_counts_table, _ = calculate_game_counts_table(games, all_players)
+    game_counts_table, _ = calculate_game_counts_table(
+        games, all_players, skip_highlight=config.settings.skip_highlight
+    )
 
     # Calculate rated lifetime scores
     lifetime_scores = calculate_rated_lifetime_scores(games)

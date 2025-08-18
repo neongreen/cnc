@@ -1,3 +1,9 @@
+[settings]
+# highlight games by all players except Emily and easybot because I don't care about those
+skip_highlight = ["emily", "easybot"]
+
+# --- Players ---
+
 [players.emily]
 display_name = "Emily"
 hivegame = ["emily", "ParathaBread"]

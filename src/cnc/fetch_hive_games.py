@@ -14,7 +14,7 @@ import structlog
 from cnc.hivegame import (
     HG_GameResponse,
     fetch_games_between_players,
-    get_all_players,
+    get_config,
     HiveGameNick,
     HivePlayerId,
     HivePlayerInfo,
@@ -235,7 +235,8 @@ def main():
         logger.info(f"Will refresh pairings older than {args.max_age} days")
 
     # Get all players
-    all_players = get_all_players(project_root / "data" / "hive.toml")
+    config = get_config(project_root / "data" / "hive.toml")
+    all_players = config.players
 
     # Fetch games with caching
     cache = fetch_all_player_games_with_cache(

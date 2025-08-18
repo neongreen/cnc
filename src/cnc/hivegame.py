@@ -240,32 +240,17 @@ class HivePlayerInfo(BaseModel):
         )
 
 
-def get_all_players(file_path: Path) -> dict[HivePlayerId, HivePlayerInfo]:
-    """Get all players from the players section from hive.toml."""
-    logger.debug("Loading players", file_path=str(file_path))
+class HiveConfigSettings(BaseModel):
+    skip_highlight: list[HivePlayerId]
 
-    try:
-        with file_path.open("rb") as f:
-            data = tomllib.load(f)
 
-        player_info: dict[HivePlayerId, HivePlayerInfo] = {}
+class HiveConfig(BaseModel):
+    settings: HiveConfigSettings
+    players: dict[HivePlayerId, HivePlayerInfo]
 
-        # Add players from players section
-        players_data = data.get("players", {})
 
-        for player_id, player_data in players_data.items():
-            player_info[player_id] = HivePlayerInfo.model_validate(player_data)
-
-        logger.info(
-            "Players in the config",
-            count=len(player_info),
-            players=sorted(p.display_name for p in player_info.values()),
-            all_hivegame_nicks=sorted(
-                f"@{nick}" for p in player_info.values() for nick in p.hivegame
-            ),
-        )
-        return player_info
-
-    except Exception as e:
-        logger.error(f"Error loading players from {file_path}: {e}", exc_info=True)
-        return {}
+def get_config(file_path: Path) -> HiveConfig:
+    """Get the config from hive.toml"""
+    with file_path.open("rb") as f:
+        data = tomllib.load(f)
+    return HiveConfig.model_validate(data)
