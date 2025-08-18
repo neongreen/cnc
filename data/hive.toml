@@ -80,3 +80,7 @@ hivegame = ["JijiDied"]
 [players.easybot]
 display_name = "🤖 easy bot"
 hivegame = ["nokamute-easy"]
+
+[players.mylo]
+display_name = "myloRAHH"
+hivegame = ["myloRAHH"]

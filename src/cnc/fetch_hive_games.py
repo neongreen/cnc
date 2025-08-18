@@ -96,7 +96,7 @@ def fetch_all_player_games_with_cache(
     cache = GameCache(pairings={})
     if cache_file.exists() and not force_refresh:
         try:
-            logger.info("Loading existing cache file")
+            logger.debug("Loading existing cache file")
             with open(cache_file, "r") as f:
                 cache_data = json.load(f)
                 # Convert JSON data back to GameCache object using Pydantic
@@ -115,7 +115,7 @@ def fetch_all_player_games_with_cache(
 
     for (p1, p1_data), (p2, p2_data) in combinations(all_players.items(), 2):
         for p1_hivegame, p2_hivegame in product(p1_data.hivegame, p2_data.hivegame):
-            logger.info(f"Processing @{p1_hivegame} vs @{p2_hivegame}")
+            logger.debug(f"Processing @{p1_hivegame} vs @{p2_hivegame}")
             pairing_key = create_pairing_key(p1_hivegame, p2_hivegame)
             should_fetch = pairing_key not in cache.pairings or (
                 cache.pairings[pairing_key].last_fetch

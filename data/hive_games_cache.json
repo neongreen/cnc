@@ -3272,6 +3272,148 @@
     "@JijiDied|@nokamute-easy": {
       "last_fetch": "2025-08-18 16:01:04.428318",
       "games": []
+    },
+    "@emily|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:48.006839",
+      "games": [
+        {
+          "game_id": "hgCWX47DViko",
+          "finished": true,
+          "white_player": {
+            "username": "emily",
+            "bot": false,
+            "admin": false
+          },
+          "black_player": {
+            "username": "myloRAHH",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Board",
+          "created_at": "2025-08-18 16:18:10.073845+00:00",
+          "speed": "Untimed",
+          "game_type": "Base"
+        }
+      ]
+    },
+    "@myloRAHH|@ParathaBread": {
+      "last_fetch": "2025-08-18 18:43:48.170809",
+      "games": []
+    },
+    "@antTenna|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:48.333522",
+      "games": []
+    },
+    "@im0elobro|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:48.516908",
+      "games": []
+    },
+    "@myloRAHH|@VCube1003": {
+      "last_fetch": "2025-08-18 18:43:48.700093",
+      "games": []
+    },
+    "@myloRAHH|@Yew": {
+      "last_fetch": "2025-08-18 18:43:48.877977",
+      "games": []
+    },
+    "@Chezmosis|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:49.083022",
+      "games": []
+    },
+    "@Momoh|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:49.226248",
+      "games": []
+    },
+    "@myloRAHH|@vivid": {
+      "last_fetch": "2025-08-18 18:43:49.386259",
+      "games": []
+    },
+    "@myloRAHH|@sted": {
+      "last_fetch": "2025-08-18 18:43:49.542983",
+      "games": []
+    },
+    "@iwanakeyboard|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:49.687299",
+      "games": []
+    },
+    "@csridge|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:49.843587",
+      "games": []
+    },
+    "@myloRAHH|@Stickbug": {
+      "last_fetch": "2025-08-18 18:43:50.028116",
+      "games": []
+    },
+    "@myloRAHH|@Zxelpski": {
+      "last_fetch": "2025-08-18 18:43:50.201384",
+      "games": []
+    },
+    "@myloRAHH|@Surviv34": {
+      "last_fetch": "2025-08-18 18:43:50.376362",
+      "games": []
+    },
+    "@myloRAHH|@silvy0711": {
+      "last_fetch": "2025-08-18 18:43:50.557786",
+      "games": []
+    },
+    "@myloRAHH|@Sealandball": {
+      "last_fetch": "2025-08-18 18:43:50.737700",
+      "games": []
+    },
+    "@kk|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:50.914811",
+      "games": []
+    },
+    "@almostgood|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:51.085310",
+      "games": []
+    },
+    "@Canis327O|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:51.258359",
+      "games": []
+    },
+    "@Jejdjfjc|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:51.444203",
+      "games": []
+    },
+    "@JijiDied|@myloRAHH": {
+      "last_fetch": "2025-08-18 18:43:51.625620",
+      "games": []
+    },
+    "@myloRAHH|@nokamute-easy": {
+      "last_fetch": "2025-08-18 18:43:51.778601",
+      "games": [
+        {
+          "game_id": "_Qn2s7vwcmK9",
+          "finished": true,
+          "white_player": {
+            "username": "nokamute-easy",
+            "bot": true,
+            "admin": false
+          },
+          "black_player": {
+            "username": "myloRAHH",
+            "bot": false,
+            "admin": false
+          },
+          "game_status": {
+            "Finished": {
+              "Winner": "White"
+            }
+          },
+          "rated": false,
+          "conclusion": "Resigned",
+          "created_at": "2025-08-18 16:13:21.583907+00:00",
+          "speed": "Untimed",
+          "game_type": "Base"
+        }
+      ]
     }
   }
 }
