@@ -141,15 +141,11 @@
       font-family: 'MonaspaceRadon', monospace;
     }
 
-    .matchup-table .player-link {
-      font-family: 'MonaspaceKrypton', monospace;
-    }
-
     .player-link {
-      color: #007bff;
+      color: #1a73e8;
       text-decoration: none;
-      font-weight: 500;
-      transition: color 0.2s ease;
+      font-weight: 700;
+      transition: color 0.2s;
     }
 
     .player-link:hover {
@@ -173,7 +169,7 @@
   <h2>Game counts between players</h2>
   <p>
     This table shows the number of games played between each pair of players.
-    Format: <b>W-L-D +unrated</b> where W-L-D represents wins-losses-draws in rated games.
+    The first row shows wins-losses-draws for rated games, the second row — for unrated games.
   </p>
   {{ game_counts_table | safe }}
 

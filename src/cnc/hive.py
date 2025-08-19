@@ -32,6 +32,15 @@ class HiveGameResult(BaseModel):
     result: Literal["p1", "p2", "draw"]
     rated: bool
 
+    def winner(self) -> HivePlayerId | None:
+        match self.result:
+            case "p1":
+                return self.player1
+            case "p2":
+                return self.player2
+            case "draw":
+                return None
+
 
 class HivePlayerOverallStats(BaseModel):
     id: HivePlayerId
@@ -164,7 +173,10 @@ def calculate_game_counts_table(
     <table class="matchup-table">
         <thead>
             <tr>
-                <th></th>
+                <th>
+                    <span style="">rated,</span>
+                    <span style="font-size: 0.7em; color: gray;">unrated</span>
+                </th>
     """
 
     # Add column headers
@@ -186,58 +198,53 @@ def calculate_game_counts_table(
 
         for col_player_id in order:
             if row_player_id == col_player_id:
-                table_html += '<td class="self-match">-</td>'
-            else:
-                games_list = games.get_games(row_player_id, col_player_id)
-                if games_list:
-                    rated_games = [g for g in games_list if g.rated]
-                    unrated_count = sum(1 for g in games_list if not g.rated)
+                table_html += '<td class="self-match"></td>'
+            elif games_list := games.get_games(row_player_id, col_player_id):
+                rated_games, unrated_games = (
+                    [g for g in games_list if g.rated],
+                    [g for g in games_list if not g.rated],
+                )
 
-                    if len(games_list) == 0:
-                        table_html += '<td class="no-matches"></td>'
-                    else:
-                        # Calculate W/L/D for rated games
-                        # Count wins/losses/draws from the perspective of the row player
-                        wins = sum(
-                            1
-                            for g in rated_games
-                            if (
-                                (g.player1 == row_player_id and g.result == "p1")
-                                or (g.player2 == row_player_id and g.result == "p2")
-                            )
-                        )
-                        losses = sum(
-                            1
-                            for g in rated_games
-                            if (
-                                (g.player1 == row_player_id and g.result == "p2")
-                                or (g.player2 == row_player_id and g.result == "p1")
-                            )
-                        )
-                        draws = sum(1 for g in rated_games if g.result == "draw")
+                # Count wins/losses/draws from the perspective of the row player
+                wins_rated = sum(g.winner() == row_player_id for g in rated_games)
+                losses_rated = sum(g.winner() != row_player_id for g in rated_games)
+                draws_rated = sum(g.winner() is None for g in rated_games)
 
-                        # Format as W-L-D
-                        if len(rated_games) > 0 and draws > 0:
-                            rated_str = f"{wins}-{losses}-{draws}"
-                        elif len(rated_games) > 0:
-                            rated_str = f"{wins}-{losses}"
-                        else:
-                            rated_str = "-"
+                wins_unrated = sum(g.winner() == row_player_id for g in unrated_games)
+                losses_unrated = sum(g.winner() != row_player_id for g in unrated_games)
+                draws_unrated = sum(g.winner() is None for g in unrated_games)
 
-                        # Add unrated count if any (in gray font) on next line
-                        unrated_str = (
-                            f'<br><span style="color: gray;">+{unrated_count}</span>'
-                        )
-
-                        highlight_class = (
-                            ""
-                            if row_player_id in skip_highlight
-                            or col_player_id in skip_highlight
-                            else "highlighted"
-                        )
-                        table_html += f'<td class="has-matches {highlight_class}">{rated_str}{unrated_str}</td>'
+                # Format as W-L-D
+                if len(rated_games) > 0 and draws_rated > 0:
+                    rated_str = f"{wins_rated}-{losses_rated}-{draws_rated}"
+                elif len(rated_games) > 0:
+                    rated_str = f"{wins_rated}-{losses_rated}"
                 else:
-                    table_html += '<td class="no-matches"></td>'
+                    rated_str = "&nbsp;"
+
+                if len(unrated_games) > 0 and draws_unrated > 0:
+                    unrated_str = f"{wins_unrated}-{losses_unrated}-{draws_unrated}"
+                elif len(unrated_games) > 0:
+                    unrated_str = f"{wins_unrated}-{losses_unrated}"
+                else:
+                    unrated_str = "&nbsp;"
+
+                highlight_class = (
+                    ""
+                    if row_player_id in skip_highlight
+                    or col_player_id in skip_highlight
+                    or row_player_id == col_player_id
+                    else "highlighted"
+                )
+
+                table_html += (
+                    f'<td class="has-matches {highlight_class}">'
+                    f"<span>{rated_str}</span><br>"
+                    f"<span style='color: gray; font-size: 0.7em;'>{unrated_str}</span>"
+                    f"</td>"
+                )
+            else:
+                table_html += '<td class="no-matches"></td>'
 
         table_html += "</tr>"
 
