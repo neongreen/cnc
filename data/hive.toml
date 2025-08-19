@@ -1,6 +1,6 @@
 [settings]
-# highlight games by all players except Emily and easybot because I don't care about those
-skip_highlight = ["emily", "easybot"]
+# highlight games by all players except Emily and the bots because I don't care about those
+skip_highlight = ["emily", "easybot", "mediumbot"]
 
 # --- Players ---
 
@@ -83,10 +83,14 @@ hivegame = ["Jejdjfjc"]
 display_name = "Smear"
 hivegame = ["JijiDied"]
 
+[players.mylo]
+display_name = "myloRAHH"
+hivegame = ["myloRAHH"]
+
 [players.easybot]
 display_name = "🤖 easy bot"
 hivegame = ["nokamute-easy"]
 
-[players.mylo]
-display_name = "myloRAHH"
-hivegame = ["myloRAHH"]
+[players.mediumbot]
+display_name = "🤖🤖 medium bot"
+hivegame = ["nokamute-medium"]
