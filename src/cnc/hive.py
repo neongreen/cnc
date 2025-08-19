@@ -380,58 +380,6 @@ def generate_hive_html() -> str:
 
     graph_height = 700
 
-    table_content: str = f"""
-    <table>
-        <thead>
-            <tr>
-                <th></th>
-    {
-        "".join(
-            f'''
-                <th>{all_players[p].display_name}</th>
-            '''
-            for p in sorted_participants_list
-        )
-    }
-            </tr>
-        </thead>
-        <tbody>
-    """
-
-    for row_player in sorted_participants_list:
-        table_content += f"""
-            <tr>
-                <th>
-                    <div>{all_players[row_player].display_name}</div>
-                </th>
-        """
-        for col_player in sorted_participants_list:
-            cell_content = ""
-            cell_class = ""
-            if row_player == col_player:
-                cell_class = "self-match-cell"
-            elif Pair(row_player, col_player) in lifetime_scores:
-                scores = lifetime_scores[Pair(row_player, col_player)]
-                row_player_score = scores[row_player]
-                col_player_score = scores[col_player]
-                cell_class = (
-                    "win-cell"
-                    if row_player_score > col_player_score
-                    else "loss-cell"
-                    if row_player_score < col_player_score
-                    else "draw-cell"
-                )
-                cell_content += f"""
-                        <div class='score-text'>{row_player_score} – {col_player_score}</div>
-                    """
-            table_content += f"<td class='{cell_class}'>{cell_content}</td>"
-        table_content += "</tr>"
-
-    table_content += """
-        </tbody>
-    </table>
-    """
-
     # Generate D3.js graph data
     import json
     from dataclasses import asdict
@@ -455,7 +403,6 @@ def generate_hive_html() -> str:
 
     return flask.render_template(
         "hive.html.j2",
-        table_content=table_content,
         game_counts_table=game_counts_table,
         graph_data=json.dumps(asdict(graph_data)),
         levels_data=json.dumps(levels),
