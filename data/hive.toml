@@ -1,6 +1,6 @@
 [settings]
 # highlight games by all players except Emily and the bots because I don't care about those
-skip_highlight = ["emily", "easybot", "mediumbot"]
+skip_highlight = ["emily", "easybot", "mediumbot", "hardbot"]
 
 # --- Players ---
 
@@ -94,3 +94,7 @@ hivegame = ["nokamute-easy"]
 [players.mediumbot]
 display_name = "🤖🤖 medium bot"
 hivegame = ["nokamute-medium"]
+
+[players.hardbot]
+display_name = "🤖🤖🤖 hard bot"
+hivegame = ["nokamute-hard"]

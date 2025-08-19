@@ -214,8 +214,8 @@ def main():
     parser.add_argument(
         "--max-age",
         type=int,
-        default=0,
-        help="Maximum age in days before refreshing",
+        default=60 * 10,  # 10 minutes
+        help="Maximum age in seconds before refreshing",
     )
     parser.add_argument(
         "--cache-file",
@@ -232,7 +232,7 @@ def main():
     if args.force:
         logger.info("Force refresh mode - will fetch all pairings")
     else:
-        logger.info(f"Will refresh pairings older than {args.max_age} days")
+        logger.info(f"Will refresh pairings older than {args.max_age} seconds")
 
     # Get all players
     config = get_config(project_root / "data" / "hive.toml")
@@ -243,7 +243,7 @@ def main():
         all_players,
         cache_file,
         force_refresh=args.force,
-        stale_seconds=args.max_age * 60 * 60 * 24,
+        stale_seconds=args.max_age,
     )
 
     # Show games per current player (aggregating across all nicks)
