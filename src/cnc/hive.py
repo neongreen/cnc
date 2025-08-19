@@ -188,23 +188,36 @@ def calculate_game_counts_table(
             else:
                 games_list = games.get_games(row_player_id, col_player_id)
                 if games_list:
-                    rated_count = sum(1 for g in games_list if g.rated)
+                    rated_games = [g for g in games_list if g.rated]
                     unrated_count = sum(1 for g in games_list if not g.rated)
-                    total_count = len(games_list)
 
-                    if total_count == 0:
+                    if len(games_list) == 0:
                         table_html += '<td class="no-matches">0</td>'
                     else:
-                        unrated_str = (
-                            f" (+{unrated_count})" if unrated_count > 0 else ""
-                        )
+                        # Calculate W/L/D for rated games
+                        wins = sum(1 for g in rated_games if g.result == "p1")
+                        losses = sum(1 for g in rated_games if g.result == "p2")
+                        draws = sum(1 for g in rated_games if g.result == "draw")
+
+                        # Format as W-L-D
+                        if len(rated_games) > 0:
+                            rated_str = f"{wins}-{losses}-{draws}"
+                        else:
+                            rated_str = "0-0-0"
+
+                        # Add unrated count if any (in gray font) on next line
+                        if unrated_count > 0:
+                            unrated_str = f'<br><span style="color: gray;">+{unrated_count}</span>'
+                        else:
+                            unrated_str = ""
+
                         highlight_class = (
                             ""
                             if row_player_id in skip_highlight
                             or col_player_id in skip_highlight
                             else "highlighted"
                         )
-                        table_html += f'<td class="has-matches {highlight_class}">{rated_count}{unrated_str}</td>'
+                        table_html += f'<td class="has-matches {highlight_class}">{rated_str}{unrated_str}</td>'
                 else:
                     table_html += '<td class="no-matches">0</td>'
 

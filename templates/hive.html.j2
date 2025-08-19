@@ -6,6 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hive</title>
   <style>
+    @font-face {
+      font-family: 'MonaspaceKrypton';
+      src: url('https://cdn.jsdelivr.net/gh/githubnext/monaspace@v1.000/fonts/webfonts/MonaspaceKrypton-Regular.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'MonaspaceRadon';
+      src: url('https://cdn.jsdelivr.net/gh/githubnext/monaspace@v1.000/fonts/webfonts/MonaspaceRadon-Regular.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+
     html {
       font-size: 14px;
     }
@@ -121,6 +135,14 @@
       background-color: #fff197;
     }
 
+    .matchup-table .has-matches {
+      font-family: 'MonaspaceKrypton', monospace;
+    }
+
+    .matchup-table .player-link {
+      font-family: 'MonaspaceRadon', monospace;
+    }
+
     .player-link {
       color: #007bff;
       text-decoration: none;
@@ -149,7 +171,7 @@
   <h2>Game counts between players</h2>
   <p>
     This table shows the number of games played between each pair of players.
-    Format: <b>rated (+ unrated)</b>.
+    Format: <b>W-L-D +unrated</b> where W-L-D represents wins-losses-draws in rated games.
   </p>
   {{ game_counts_table | safe }}
 
