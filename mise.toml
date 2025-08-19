@@ -10,12 +10,12 @@ description = "Start a dev server"
 run = "uv run flask --app cnc.main:app run --host=0.0.0.0 --port=5500"
 
 [tasks."dev:stop"]
-description = "Force stop the dev server"
-run = 'pkill watchexec ; pkill -f "mise watch"'
+description = "Force stop the dev server and all related processes"
+run = 'pkill -f "dev_server.py" ; pkill -f "flask --app cnc.main:app" ; pkill watchexec ; pkill -f "mise watch" ; pkill -f "mise dev" ; lsof -ti :5500 | xargs -r kill -9 2>/dev/null || true'
 
 [tasks.dev]
-description = "Start a dev server and reload on changes"
-run = "MISE_JOBS=1 mise watch --restart --wrap-process=session build ::: dev:flask"
+description = "Start a dev server with reliable file watching and process management"
+run = "uv run scripts/dev_server.py"
 
 [tasks.build]
 description = "Build static files without starting the server"
@@ -32,8 +32,32 @@ run = "deno check --allow-import graph.js"
 
 [tasks.fetch-hive]
 description = "Fetch and cache Hive game data"
-run = "uv run src/cnc/fetch_hive_games.py"
+run = "uv run src/cnc/hive/fetch_hive_games.py"
 
 [tasks.fetch-hive-force]
 description = "Force refresh all Hive game data"
-run = "uv run src/cnc/fetch_hive_games.py --force"
+run = "uv run src/cnc/hive/fetch_hive_games.py --force"
+
+[tasks."db:schema"]
+description = "Show the current database schema"
+run = "cat src/cnc/hive/schema.sql"
+
+[tasks."db:validate"]
+description = "Validate SQL schema syntax"
+run = "scripts/validate_schema.py"
+
+[tasks."dev:status"]
+description = "Check what's running on the dev port"
+run = "lsof -i :5500 || echo 'Nothing running on port 5500'"
+
+[tasks."dev:logs"]
+description = "Show logs from the dev server process"
+run = "ps aux | grep 'dev_server.py' | grep -v grep || echo 'No dev server process found'"
+
+[tasks."dev:clean"]
+description = "Clean up all dev server processes and start fresh"
+run = "mise run dev:stop && sleep 1 && mise run dev"
+
+[tasks."find-unused-code"]
+description = "Find unused methods/functions"
+run = "uvx vulture src/ | rg 'method|function'"

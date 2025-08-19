@@ -1,24 +1,16 @@
 from datetime import datetime
-from pathlib import Path
-from typing import Literal, NewType
+from typing import Literal
 from uuid import UUID
 
 import cbor2
 import requests
-import tomllib
 from pydantic import BaseModel, RootModel
 import structlog
 
 from cnc.utils import pprint_dict
+from cnc.hive.player_ids import HG_PlayerId
 
 logger = structlog.get_logger()
-
-
-HiveGameNick = NewType("HiveGameNick", str)
-"""Nick on hivegame.com without @"""
-
-HivePlayerId = NewType("HivePlayerId", str)
-"""Key in hive.toml, e.g. "emily" who corresponds to emily and ParathaBread from hivegame.com"""
 
 
 ################################################################################
@@ -54,13 +46,17 @@ class HG_BatchInfo(BaseModel):
 
 
 class HG_PlayerFilter(BaseModel):
-    username: HiveGameNick
+    model_config = {"arbitrary_types_allowed": True}
+
+    username: HG_PlayerId
     color: Literal["White", "Black"] | None = None
     result: Literal["Win", "Loss", "Draw"] | None = None
 
 
 class HG_UserResponse(BaseModel):
-    username: HiveGameNick
+    model_config = {"arbitrary_types_allowed": True}
+
+    username: HG_PlayerId
     bot: bool
     admin: bool
 
@@ -105,8 +101,8 @@ class HG_GameResponse(BaseModel):
 
 
 def fetch_games_between_players(
-    player1: HiveGameNick,
-    player2: HiveGameNick,
+    player1: HG_PlayerId,
+    player2: HG_PlayerId,
     start: datetime | None = None,  # XXX: not used
     max_games: int = 100,  # TODO: actually keep going instead of just doing one batch
 ) -> list[HG_GameResponse]:
@@ -216,43 +212,96 @@ def fetch_games_between_players(
         return []
 
 
-class HivePlayerInfo(BaseModel):
-    """Information about a player from hive.toml"""
+def fetch_games_for_player(
+    player: HG_PlayerId,
+    max_games: int = 100,  # TODO: actually keep going instead of just doing one batch
+) -> list[HG_GameResponse]:
+    """
+    Fetch all games for a single player from hivegame.com
 
-    display_name: str
-    hivegame: list[HiveGameNick]
-    hivegame_current: HiveGameNick | None = None
-    bot: bool = False
+    Args:
+        player: Username of the player
+        max_games: Maximum number of games to fetch (default 100)
+    Returns:
+        List of HG_GameResponse objects with game details
+    """
+    logger.info(
+        "Fetching games for player",
+        player=player,
+        max_games=max_games,
+    )
 
-    @property
-    def current_nick(self) -> HiveGameNick:
-        """
-        Returns the current hivegame nick for this player.
-        - If hivegame_current is set, use it.
-        - If hivegame has exactly one entry, use that.
-        - Otherwise, raise an error.
-        """
-        if self.hivegame_current is not None:
-            return self.hivegame_current
-        if len(self.hivegame) == 1:
-            return self.hivegame[0]
-        raise ValueError(
-            f"Cannot determine current hivegame nick for {self.display_name}: "
-            f"multiple nicks and no hivegame_current set"
+    # The API endpoint ID changes, so we need to discover it
+    # For now, we'll use a known working ID from our testing
+    base_endpoint = "https://hivegame.com/api/get_batch_from_options"
+    endpoint_id = "10902783915456376667"  # XXX This will need to be updated dynamically
+    full_endpoint = f"{base_endpoint}{endpoint_id}"
+
+    logger.debug(f"Using API endpoint: {full_endpoint}")
+
+    all_games: list[HG_GameResponse] = []
+
+    try:
+        # Query for finished games for this player (either as white or black)
+        query_data = {
+            "options": {
+                **HG_GamesQueryOptions(
+                    player1=HG_PlayerFilter(username=player),
+                    player2=None,  # No specific opponent
+                    speeds=all_speeds,
+                    current_batch=None,
+                    batch_size=max_games,
+                    game_progress="Finished",
+                    expansions=None,
+                    rated=None,
+                    exclude_bots=False,
+                ).model_dump(),
+            }
+        }
+
+        logger.debug("Query data:\n%s", pprint_dict(query_data))
+
+        # Encode to CBOR
+        cbor_data = cbor2.dumps(query_data)
+
+        # Make the API request
+        response = requests.post(
+            full_endpoint,
+            data=cbor_data,
+            headers={
+                "accept": "application/cbor",
+                "content-type": "application/cbor",
+            },
+            timeout=30,
         )
 
+        if response.status_code == 200:
+            # Decode CBOR response
+            response_data = cbor2.loads(response.content)
+            logger.debug("Received games from API", count=len(response_data))
 
-class HiveConfigSettings(BaseModel):
-    skip_highlight: list[HivePlayerId]
+            for i, game in enumerate(response_data):
+                logger.debug(
+                    f"Processing game {i + 1}/{len(response_data)}: {game.get('game_id', 'unknown')}"
+                )
+                game_result = HG_GameResponse.model_validate(game)
+                logger.debug(f"Game: {pprint_dict(game_result.model_dump())}")
 
+                all_games.append(game_result)
+                logger.debug(f"Added game: {game_result.game_id}")
 
-class HiveConfig(BaseModel):
-    settings: HiveConfigSettings
-    players: dict[HivePlayerId, HivePlayerInfo]
+        else:
+            logger.error(
+                f"API request failed with status {response.status_code}: {response.text}"
+            )
 
+        logger.debug(
+            "Successfully fetched games for player",
+            count=len(all_games),
+            player=player,
+        )
+        return all_games
 
-def get_config(file_path: Path) -> HiveConfig:
-    """Get the config from hive.toml"""
-    with file_path.open("rb") as f:
-        data = tomllib.load(f)
-    return HiveConfig.model_validate(data)
+    except Exception as e:
+        logger.error(f"Error fetching games for player {player}: {e}", exc_info=True)
+        return []

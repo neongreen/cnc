@@ -1,50 +1,31 @@
 """
-Script to fetch and cache Hive game data between all players.
+Script to fetch and cache Hive game data for all players.
 This avoids having to fetch games every time the page is generated.
 """
 
-from itertools import combinations, product
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, NewType, Tuple
+from typing import Dict, NewType
 from pydantic import BaseModel
 import structlog
 
-from cnc.hivegame import (
+from cnc.hive.config import KnownPlayer, get_config
+from cnc.hive.hivegamecom import (
     HG_GameResponse,
-    fetch_games_between_players,
-    get_config,
-    HiveGameNick,
-    HivePlayerId,
-    HivePlayerInfo,
+    fetch_games_for_player,
 )
+from cnc.hive.player_ids import KnownPlayerId
 from cnc.utils import setup_logging
 
 logger = structlog.get_logger()
 
-PairingKey = NewType("PairingKey", str)
-"""Key in the cache file, e.g. "@emily|@yew", with the nicks sorted alphabetically"""
+PlayerKey = NewType("PlayerKey", str)
+"""Key in the cache file, e.g. "@emily" for a player's games"""
 
 
-def create_pairing_key(player1: HiveGameNick, player2: HiveGameNick) -> PairingKey:
-    """Create a unique pairing key with players in alphabetical order"""
-    # Sort players alphabetically to ensure unique encoding
-    if player1.lower() < player2.lower():
-        return PairingKey(f"@{player1}|@{player2}")
-    else:
-        return PairingKey(f"@{player2}|@{player1}")
-
-
-def parse_pairing_key(pairing_key: PairingKey) -> Tuple[HiveGameNick, HiveGameNick]:
-    """Parse a pairing key back to player nicks"""
-    # Remove @ symbols and split by |
-    players = pairing_key.replace("@", "").split("|")
-    return HiveGameNick(players[0]), HiveGameNick(players[1])
-
-
-class PairingCache(BaseModel):
-    """Cache for a single pairing"""
+class PlayerCache(BaseModel):
+    """Cache for a single player's games"""
 
     last_fetch: datetime
     games: list[HG_GameResponse]
@@ -53,13 +34,13 @@ class PairingCache(BaseModel):
 class GameCache(BaseModel):
     """Complete cache of all games and metadata"""
 
-    pairings: Dict[PairingKey, PairingCache]
+    players: Dict[PlayerKey, PlayerCache]
 
 
 def get_games_for_current_player(
     cache: GameCache,
-    all_players: Dict[HivePlayerId, HivePlayerInfo],
-    current_player_id: HivePlayerId,
+    all_players: Dict[KnownPlayerId, KnownPlayer],
+    current_player_id: KnownPlayerId,
 ) -> list[HG_GameResponse]:
     """Get all games for a current player, aggregating across all their nicks (current + past)"""
     all_games = []
@@ -67,30 +48,30 @@ def get_games_for_current_player(
     player_data = all_players[current_player_id]
 
     # Find all cache entries that involve any of this player's nicks
-    for pairing_key, pairing_data in cache.pairings.items():
-        games = pairing_data.games
-        nick1, nick2 = parse_pairing_key(pairing_key)
+    for player_key, player_data_cache in cache.players.items():
+        games = player_data_cache.games
+        player_nick = player_key.replace("@", "")
 
-        # Check if either nick belongs to this player
-        if nick1 in player_data.hivegame or nick2 in player_data.hivegame:
+        # Check if this nick belongs to this player
+        if player_nick in player_data.hivegame:
             all_games.extend(games)
 
     return all_games
 
 
 def fetch_all_player_games_with_cache(
-    all_players: dict[HivePlayerId, HivePlayerInfo],
+    known_players: dict[KnownPlayerId, KnownPlayer],
     cache_file: Path,
     force_refresh: bool = False,
     stale_seconds: int = (
         60 * 60 * 24 * 7
-    ),  # if the cache for a pairing is older than this, fetch new games
+    ),  # if the cache for a player is older than this, fetch new games
 ) -> GameCache:
-    """Fetch all games between all players, using cache when possible"""
+    """Fetch all games for all players, using cache when possible"""
     logger.debug("Starting game fetch", cache_file=str(cache_file))
 
     # Load existing cache if it exists
-    cache = GameCache(pairings={})
+    cache = GameCache(players={})
     if cache_file.exists() and not force_refresh:
         try:
             logger.debug("Loading existing cache file")
@@ -100,12 +81,12 @@ def fetch_all_player_games_with_cache(
                 cache = GameCache.model_validate(cache_data)
 
             logger.info(
-                "Loaded cache", games=sum(len(p.games) for p in cache.pairings.values())
+                "Loaded cache", games=sum(len(p.games) for p in cache.players.values())
             )
 
         except Exception as e:
             logger.error(f"Error loading existing cache: {e}", exc_info=True)
-            cache = GameCache(pairings={})
+            cache = GameCache(players={})
     else:
         if force_refresh:
             logger.info("Force refresh requested, ignoring existing cache")
@@ -115,26 +96,28 @@ def fetch_all_player_games_with_cache(
     had_to_fetch = False  # Whether we had to fetch any games
     new_games = 0  # Number of new games fetched
 
-    for (p1, p1_data), (p2, p2_data) in combinations(all_players.items(), 2):
-        for p1_hivegame, p2_hivegame in product(p1_data.hivegame, p2_data.hivegame):
-            logger.debug("Processing pairing", p1=p1_hivegame, p2=p2_hivegame)
-            pairing_key = create_pairing_key(p1_hivegame, p2_hivegame)
+    # Fetch games for each player
+    for player_id, player_data in known_players.items():
+        for hivegame_nick in player_data.hivegame:
+            player_key = PlayerKey(f"@{hivegame_nick}")
+            logger.debug("Processing player", player=player_id, hivegame=hivegame_nick)
+
             should_fetch = False
-            if pairing_key not in cache.pairings:
-                logger.debug("Pairing not in cache, fetching", pairing_key=pairing_key)
+            if player_key not in cache.players:
+                logger.debug("Player not in cache, fetching", player_key=player_key)
                 should_fetch = True
             else:
                 logger.debug(
-                    "Pairing in cache, checking if stale", pairing_key=pairing_key
+                    "Player in cache, checking if stale", player_key=player_key
                 )
-                last_fetch = cache.pairings[pairing_key].last_fetch
+                last_fetch = cache.players[player_key].last_fetch
                 is_stale = last_fetch < datetime.now() - timedelta(
                     seconds=stale_seconds
                 )
                 logger.debug(
-                    "Pairing is stale, fetching"
+                    "Player is stale, fetching"
                     if is_stale
-                    else "Pairing is not stale, skipping fetch",
+                    else "Player is not stale, skipping fetch",
                     last_fetch=last_fetch.strftime("%Y-%m-%d %H:%M:%S"),
                     stale_seconds=stale_seconds,
                 )
@@ -143,40 +126,40 @@ def fetch_all_player_games_with_cache(
             if should_fetch:
                 had_to_fetch = True
                 try:
-                    games = fetch_games_between_players(p1_hivegame, p2_hivegame)
+                    games = fetch_games_for_player(hivegame_nick)
 
                     # Merge games into existing cache entry
-                    if pairing_key not in cache.pairings:
-                        cache.pairings[pairing_key] = PairingCache(
+                    if player_key not in cache.players:
+                        cache.players[player_key] = PlayerCache(
                             last_fetch=datetime.now(), games=games
                         )
                         new_games += len(games)
                     else:
                         # Deduplicate games by game_id
-                        cached_games = cache.pairings[pairing_key].games
+                        cached_games = cache.players[player_key].games
                         updated_games = list(
                             {g.game_id: g for g in (cached_games + games)}.values()
                         )
                         new_games += len(updated_games) - len(cached_games)
-                        cache.pairings[pairing_key] = PairingCache(
+                        cache.players[player_key] = PlayerCache(
                             last_fetch=datetime.now(), games=updated_games
                         )
                 except Exception as e:
                     logger.error(
-                        f"Error fetching games for {pairing_key}: {e}",
+                        f"Error fetching games for {player_key}: {e}",
                         exc_info=True,
                     )
 
     if had_to_fetch:
         logger.info("Fetch summary", new_games=new_games)
     else:
-        logger.info("Cache is not stale and there are no new pairings, skipping fetch")
+        logger.info("Cache is not stale and there are no new players, skipping fetch")
 
     # Save updated cache
     try:
         logger.debug("Saving cache", cache_file=str(cache_file))
         cache_data = {
-            "pairings": cache.pairings,
+            "players": cache.players,
         }
 
         # Ensure cache directory exists
@@ -226,7 +209,9 @@ def main():
     args = parser.parse_args()
 
     # Get project root (go up from src/cnc/ to project root)
-    project_root = Path(__file__).parent.parent.parent
+    project_root = Path(
+        __file__
+    ).parent.parent.parent.parent  # TODO: don't hardcode this
     cache_file = project_root / args.cache_file
 
     if args.force:
@@ -250,7 +235,7 @@ def main():
     logger.info(
         "Games per player",
         **{
-            player_id: len(player_games)
+            str(player_id): len(player_games)
             for player_id in all_players.keys()
             if (
                 player_games := get_games_for_current_player(

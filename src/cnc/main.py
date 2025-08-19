@@ -8,7 +8,7 @@ import shutil
 import structlog
 
 from cnc.utils import setup_logging
-from cnc.hive import generate_hive_html
+from cnc.hive.html_generator import generate_hive_html
 from cnc.maturity import (
     generate_maturity_html,
     load_maturity_data,
