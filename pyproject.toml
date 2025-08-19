@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [project.scripts]
-cnc-build = "cnc.main:build"
-cnc-dev = "cnc.main:dev"
+cnc-build = "cnc.main:build_and_exit"
+cnc-dev = "cnc.main:app"
 
 [dependency-groups]
 dev = ["pyright>=1.1.403"]

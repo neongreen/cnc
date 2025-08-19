@@ -162,13 +162,14 @@ def fetch_games_between_players(
         cbor_data = cbor2.dumps(query_data)
 
         # Make the API request
-        headers = {
-            "accept": "application/cbor",
-            "content-type": "application/cbor",
-        }
-
         response = requests.post(
-            full_endpoint, data=cbor_data, headers=headers, timeout=30
+            full_endpoint,
+            data=cbor_data,
+            headers={
+                "accept": "application/cbor",
+                "content-type": "application/cbor",
+            },
+            timeout=30,
         )
 
         if response.status_code == 200:

@@ -3,11 +3,19 @@ settings.python.uv_venv_auto = true
 [tools]
 uv = "latest"
 deno = "latest"
+watchexec = "latest"
+
+[tasks."dev:flask"]
+description = "Start a dev server"
+run = "uv run flask --app cnc.main:app run --host=0.0.0.0 --port=5500"
+
+[tasks."dev:stop"]
+description = "Force stop the dev server"
+run = 'pkill watchexec ; pkill -f "mise watch"'
 
 [tasks.dev]
-description = "Start a dev server"
-quiet = true
-run = "uv run cnc-dev"
+description = "Start a dev server and reload on changes"
+run = "MISE_JOBS=1 mise watch --restart --wrap-process=session build ::: dev:flask"
 
 [tasks.build]
 description = "Build static files without starting the server"
