@@ -88,13 +88,16 @@ display_name = "myloRAHH"
 hivegame = ["myloRAHH"]
 
 [players.easybot]
-display_name = "🤖 easy bot"
+display_name = "🤖 easy"
 hivegame = ["nokamute-easy"]
+bot = true
 
 [players.mediumbot]
-display_name = "🤖🤖 medium bot"
+display_name = "🤖🤖 medium"
 hivegame = ["nokamute-medium"]
+bot = true
 
 [players.hardbot]
-display_name = "🤖🤖🤖 hard bot"
+display_name = "🤖🤖🤖 hard"
 hivegame = ["nokamute-hard"]
+bot = true

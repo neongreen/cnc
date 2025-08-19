@@ -221,6 +221,7 @@ class HivePlayerInfo(BaseModel):
     display_name: str
     hivegame: list[HiveGameNick]
     hivegame_current: HiveGameNick | None = None
+    bot: bool = False
 
     @property
     def current_nick(self) -> HiveGameNick:

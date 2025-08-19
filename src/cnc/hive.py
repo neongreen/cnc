@@ -113,11 +113,13 @@ class Games:
 def calculate_game_counts_table(
     games: Games,
     all_players: dict[HivePlayerId, HivePlayerInfo],
+    order: list[HivePlayerId],
     skip_highlight: list[HivePlayerId],
 ) -> tuple[str, dict[HivePlayerId, PlayerGameCounts]]:
-    """Generate a table showing game counts between players, sorted by total games
+    """Generate a table showing game counts between players
 
     Args:
+        order: order of players in the table
         skip_highlight: do not highlight games by these players in the table
 
     Returns:
@@ -162,11 +164,11 @@ def calculate_game_counts_table(
     <table class="matchup-table">
         <thead>
             <tr>
-                <th>Player</th>
+                <th></th>
     """
 
     # Add column headers
-    for player_id, _ in sorted_players:
+    for player_id in order:
         player_data = all_players[player_id]
         display_name = player_data.display_name
         hivegame = player_data.current_nick
@@ -175,14 +177,14 @@ def calculate_game_counts_table(
     table_html += "</tr></thead><tbody>"
 
     # Add rows
-    for row_player_id, row_counts in sorted_players:
+    for row_player_id in order:
         row_player_data = all_players[row_player_id]
         row_display_name = row_player_data.display_name
         row_hivegame = row_player_data.current_nick
 
         table_html += f'<tr><th><a href="https://hivegame.com/@/{row_hivegame}" target="_blank" class="player-link">{row_display_name}</a></th>'
 
-        for col_player_id, _ in sorted_players:
+        for col_player_id in order:
             if row_player_id == col_player_id:
                 table_html += '<td class="self-match">-</td>'
             else:
@@ -192,24 +194,40 @@ def calculate_game_counts_table(
                     unrated_count = sum(1 for g in games_list if not g.rated)
 
                     if len(games_list) == 0:
-                        table_html += '<td class="no-matches">0</td>'
+                        table_html += '<td class="no-matches"></td>'
                     else:
                         # Calculate W/L/D for rated games
-                        wins = sum(1 for g in rated_games if g.result == "p1")
-                        losses = sum(1 for g in rated_games if g.result == "p2")
+                        # Count wins/losses/draws from the perspective of the row player
+                        wins = sum(
+                            1
+                            for g in rated_games
+                            if (
+                                (g.player1 == row_player_id and g.result == "p1")
+                                or (g.player2 == row_player_id and g.result == "p2")
+                            )
+                        )
+                        losses = sum(
+                            1
+                            for g in rated_games
+                            if (
+                                (g.player1 == row_player_id and g.result == "p2")
+                                or (g.player2 == row_player_id and g.result == "p1")
+                            )
+                        )
                         draws = sum(1 for g in rated_games if g.result == "draw")
 
                         # Format as W-L-D
-                        if len(rated_games) > 0:
+                        if len(rated_games) > 0 and draws > 0:
                             rated_str = f"{wins}-{losses}-{draws}"
+                        elif len(rated_games) > 0:
+                            rated_str = f"{wins}-{losses}"
                         else:
-                            rated_str = "0-0-0"
+                            rated_str = "-"
 
                         # Add unrated count if any (in gray font) on next line
-                        if unrated_count > 0:
-                            unrated_str = f'<br><span style="color: gray;">+{unrated_count}</span>'
-                        else:
-                            unrated_str = ""
+                        unrated_str = (
+                            f'<br><span style="color: gray;">+{unrated_count}</span>'
+                        )
 
                         highlight_class = (
                             ""
@@ -219,7 +237,7 @@ def calculate_game_counts_table(
                         )
                         table_html += f'<td class="has-matches {highlight_class}">{rated_str}{unrated_str}</td>'
                 else:
-                    table_html += '<td class="no-matches">0</td>'
+                    table_html += '<td class="no-matches"></td>'
 
         table_html += "</tr>"
 
@@ -303,21 +321,45 @@ def generate_hive_html() -> str:
         all_players,
     )
 
-    # Generate game counts table
-    game_counts_table, _ = calculate_game_counts_table(
-        games, all_players, skip_highlight=config.settings.skip_highlight
-    )
-
     # Calculate rated lifetime scores
     lifetime_scores = calculate_rated_lifetime_scores(games)
     logger.debug(f"Lifetime scores: {pprint_dict(lifetime_scores)}")
 
-    # Extract unique participants from games
-    participants: set[HivePlayerId] = set()
-    for pair in lifetime_scores.keys():
-        participants.update([pair.a, pair.b])
+    # Get sorted participants with bots at the end
+    stats: dict[HivePlayerId, HivePlayerOverallStats] = {
+        stat.id: stat for stat in calculate_hive_player_total_stats(games)
+    }
+    for player_id, player_info in all_players.items():
+        if player_id not in stats:
+            stats[player_id] = HivePlayerOverallStats(
+                id=player_id, wins=0, losses=0, draws=0, total_games=0
+            )
 
-    sorted_participants_list = [p.id for p in calculate_hive_player_total_stats(games)]
+    # Separate bots and non-bots, keeping original order within each group
+    non_bots = []
+    bots = []
+
+    for player_id, player_info in all_players.items():
+        if player_info.bot:
+            bots.append(player_id)
+        else:
+            non_bots.append(player_id)
+
+    # sort the non-bots by stats
+    non_bots.sort(key=lambda x: stats[x].total_games, reverse=True)
+
+    # Combine: non-bots first (sorted by stats), then bots (in original order from file)
+    sorted_participants_list = non_bots + bots
+
+    logger.debug(f"Sorted participants list: {sorted_participants_list}")
+
+    # Generate game counts table
+    game_counts_table, _ = calculate_game_counts_table(
+        games,
+        all_players,
+        order=sorted_participants_list,
+        skip_highlight=config.settings.skip_highlight,
+    )
 
     # Generate topological sort string and levels
     outcomes = pairing_outcomes(
@@ -334,11 +376,7 @@ def generate_hive_html() -> str:
             for pair, scores in lifetime_scores.items()
         ]
     )
-    logger.debug(f"Outcomes: {outcomes}")
-    logger.debug(f"Participants: {participants}")
-    levels = topological_sort_participants(outcomes, participants)
-
-    del participants  # No longer needed after this point
+    levels = topological_sort_participants(outcomes, set(sorted_participants_list))
 
     graph_height = 700
 
