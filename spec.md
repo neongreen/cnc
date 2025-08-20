@@ -67,3 +67,24 @@ now i want
 - outsider players to show up as @foo instead of foo
 - bot players should still show up, just not be considered when calculating outsiders
 - each cell should have two rows, one showing number of rated games, second in smaller gray font showing number of unrated games
+
+--- spec update 5:
+
+ok and now i want:
+
+- look at the version at https://neongreen.github.io/cnc/hive.html
+- note all things that were lost in the process of rewriting the table generator
+- list them in chat
+- dont implement them yet, just note them
+
+--- spec update 6:
+
+ok and now i want:
+
+- detailed game statistics (wins-losses-draws) instead of just total game counts
+- table header with "rated, unrated" label
+- CSS classes for cell styling (has-matches, no-matches, highlighted, self-match)
+- enhanced CSS styling with visual distinction between different types of cells
+- enhanced table description explaining wins-losses-draws format
+- monospace font
+- players sorted by number of games played (but still first the known players, then bots, then outsiders)

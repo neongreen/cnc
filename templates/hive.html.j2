@@ -104,14 +104,11 @@
 
     .matchup-table .has-matches {
       background-color: #eff8ff;
+      font-family: 'MonaspaceRadon', monospace;
     }
 
     .matchup-table .highlighted {
       background-color: #fff197;
-    }
-
-    .matchup-table .has-matches {
-      font-family: 'MonaspaceRadon', monospace;
     }
 
     .player-link {
@@ -141,8 +138,10 @@
 
   <h2>Game counts between players</h2>
   <p>
-    This table shows the number of games played between each pair of players.
-    The first row shows wins-losses-draws for rated games, the second row — for unrated games.
+    This table shows the detailed game statistics between each pair of players.
+    The first row shows wins-losses-draws for rated games, the second row shows wins-losses-draws for unrated games.
+    Players are sorted by total number of games played, maintaining the order: known players first, then bots, then
+    outsiders.
   </p>
   {{ game_counts_table | safe }}
 </body>

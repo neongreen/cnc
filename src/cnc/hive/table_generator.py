@@ -60,6 +60,7 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                 "display_name": player["display_name"],
                 "hivegame_nick": player["hivegame_current"],
                 "is_known": True,
+                "is_bot": player["bot"],
             }
         )
 
@@ -76,64 +77,76 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                 "display_name": f"@{outsider_nick}",  # Add @ prefix for outsiders
                 "hivegame_nick": outsider["hg_player"],
                 "is_known": False,
+                "is_bot": False,
             }
         )
 
-    # Get game counts between all player pairs, separated by rated status
+    # Get detailed game statistics between all player pairs, separated by rated status
     # Include games involving bots
-    game_counts_query = """
-        WITH player_pairs AS (
-            SELECT 
-                CASE 
-                    WHEN known_white_player IS NOT NULL THEN known_white_player
-                    ELSE hg_white_player
-                END AS player1,
-                CASE 
-                    WHEN known_black_player IS NOT NULL THEN known_black_player
-                    ELSE hg_black_player
-                END AS player2,
-                rated,
-                COUNT(*) as games_played
-            FROM hg_games
-            WHERE (known_white_player IS NOT NULL OR known_black_player IS NOT NULL)
-            GROUP BY player1, player2, rated
-            
-            UNION ALL
-            
-            SELECT 
-                CASE 
-                    WHEN known_black_player IS NOT NULL THEN known_black_player
-                    ELSE hg_black_player
-                END AS player1,
-                CASE 
-                    WHEN known_white_player IS NOT NULL THEN known_white_player
-                    ELSE hg_white_player
-                END AS player2,
-                rated,
-                COUNT(*) as games_played
-            FROM hg_games
-            WHERE (known_white_player IS NOT NULL OR known_black_player IS NOT NULL)
-            GROUP BY player1, player2, rated
-        )
+    game_stats_query = """
         SELECT 
-            player1,
-            player2,
+            CASE 
+                WHEN known_white_player IS NOT NULL THEN known_white_player
+                ELSE hg_white_player
+            END AS player1,
+            CASE 
+                WHEN known_black_player IS NOT NULL THEN known_black_player
+                ELSE hg_black_player
+            END AS player2,
             rated,
-            SUM(games_played) as total_games
-        FROM player_pairs
-        WHERE player1 != player2
-        GROUP BY player1, player2, rated
+            result,
+            COUNT(*) as total_games
+        FROM hg_games
+        WHERE (known_white_player IS NOT NULL OR known_black_player IS NOT NULL)
+        GROUP BY player1, player2, rated, result
     """
 
-    game_counts: DataFrame = db.conn.execute(game_counts_query).pl()
-    logger.debug(f"Game counts: {game_counts}")
+    game_stats: DataFrame = db.conn.execute(game_stats_query).pl()
+    logger.debug(f"Game stats: {game_stats}")
+
+    # Calculate total games per player for sorting
+    player_total_games = {}
+    for player in all_players:
+        player_id = player["id"]
+        total = 0
+
+        # Count games where this player appears
+        player_games = game_stats.filter(
+            (game_stats["player1"] == player_id) | (game_stats["player2"] == player_id)
+        )
+
+        if len(player_games) > 0:
+            total = player_games["total_games"].sum()
+
+        player_total_games[player_id] = total
+
+    # Sort players: known players first (by game count), then bots (by game count), then outsiders (by game count)
+    def sort_key(player):
+        player_id = player["id"]
+        total_games = player_total_games.get(player_id, 0)
+
+        if player["is_known"]:
+            if player["is_bot"]:
+                return (1, -total_games)  # Bots second, sorted by game count desc
+            else:
+                return (
+                    0,
+                    -total_games,
+                )  # Known non-bots first, sorted by game count desc
+        else:
+            return (2, -total_games)  # Outsiders third, sorted by game count desc
+
+    all_players.sort(key=sort_key)
 
     # Generate table HTML
     table_html = """
     <table class="matchup-table">
         <thead>
             <tr>
-                <th></th>
+                <th>
+                    <span style="">rated,</span>
+                    <span style="font-size: 0.7em; color: gray;">unrated</span>
+                </th>
     """
 
     # Add column headers
@@ -176,48 +189,76 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
         # Add game count cells
         for col_player in all_players:
             if row_player["id"] == col_player["id"]:
-                # Same player - show dash
-                table_html += '<td class="self">-</td>'
+                # Same player - show self-match styling
+                table_html += '<td class="self-match"></td>'
             else:
-                # Different players - find game counts for rated and unrated
-                # Look for games between these two players
-                games = game_counts.filter(
-                    (
-                        (game_counts["player1"] == row_player["id"])
-                        & (game_counts["player2"] == col_player["id"])
-                    )
-                    | (
-                        (game_counts["player1"] == col_player["id"])
-                        & (game_counts["player2"] == row_player["id"])
-                    )
+                # Different players - find game statistics for rated and unrated
+                # Look for games between these two players from both perspectives
+                games_a_vs_b = game_stats.filter(
+                    (game_stats["player1"] == row_player["id"])
+                    & (game_stats["player2"] == col_player["id"])
+                )
+                games_b_vs_a = game_stats.filter(
+                    (game_stats["player1"] == col_player["id"])
+                    & (game_stats["player2"] == row_player["id"])
                 )
 
-                if len(games) > 0:
-                    # Separate rated and unrated games
-                    rated_games = games.filter(games["rated"] == True)
-                    unrated_games = games.filter(games["rated"] == False)
-
-                    rated_count = (
-                        rated_games["total_games"].sum() if len(rated_games) > 0 else 0
+                if len(games_a_vs_b) > 0 or len(games_b_vs_a) > 0:
+                    # Calculate wins, losses, draws for this player matchup
+                    rated_stats = calculate_player_matchup_stats(
+                        row_player["id"], games_a_vs_b, games_b_vs_a, rated=True
                     )
-                    unrated_count = (
-                        unrated_games["total_games"].sum()
-                        if len(unrated_games) > 0
-                        else 0
+                    unrated_stats = calculate_player_matchup_stats(
+                        row_player["id"], games_a_vs_b, games_b_vs_a, rated=False
                     )
 
-                    if rated_count > 0 or unrated_count > 0:
-                        cell_html = f"<td>"
-                        if rated_count > 0:
-                            cell_html += f"{rated_count}"
-                        if unrated_count > 0:
-                            cell_html += f'<br><span style="font-size: 0.8em; color: #666;">{unrated_count}</span>'
-                        cell_html += "</td>"
-                        table_html += cell_html
+                    # Determine cell class based on content
+                    cell_class = "has-matches"
+                    if (
+                        rated_stats["wins"] == 0
+                        and rated_stats["losses"] == 0
+                        and rated_stats["draws"] == 0
+                        and unrated_stats["wins"] == 0
+                        and unrated_stats["losses"] == 0
+                        and unrated_stats["draws"] == 0
+                    ):
+                        cell_class = "no-matches"
+
+                    cell_html = f'<td class="{cell_class}">'
+
+                    # Add rated games (wins-losses-draws)
+                    if (
+                        rated_stats["wins"] > 0
+                        or rated_stats["losses"] > 0
+                        or rated_stats["draws"] > 0
+                    ):
+                        rated_text = f"{rated_stats['wins']}-{rated_stats['losses']}"
+                        if rated_stats["draws"] > 0:
+                            rated_text += f"-{rated_stats['draws']}"
+                        cell_html += f"<span>{rated_text}</span>"
                     else:
-                        table_html += "<td></td>"
+                        cell_html += "<span>&nbsp;</span>"
+
+                    # Add unrated games (wins-losses-draws)
+                    if (
+                        unrated_stats["wins"] > 0
+                        or unrated_stats["losses"] > 0
+                        or unrated_stats["draws"] > 0
+                    ):
+                        unrated_text = (
+                            f"{unrated_stats['wins']}-{unrated_stats['losses']}"
+                        )
+                        if unrated_stats["draws"] > 0:
+                            unrated_text += f"-{unrated_stats['draws']}"
+                        cell_html += f'<br><span style="color: gray; font-size: 0.7em;">{unrated_text}</span>'
+                    else:
+                        cell_html += '<br><span style="color: gray; font-size: 0.7em;">&nbsp;</span>'
+
+                    cell_html += "</td>"
+                    table_html += cell_html
                 else:
-                    table_html += "<td></td>"
+                    # No games between these players
+                    table_html += '<td class="no-matches"></td>'
 
         table_html += "</tr>"
 
@@ -226,3 +267,46 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
     logger.info(f"Generated table with {len(all_players)} players")
 
     return table_html
+
+
+def calculate_player_matchup_stats(
+    player_id: str, games_a_vs_b: DataFrame, games_b_vs_a: DataFrame, rated: bool
+) -> dict:
+    """Calculate wins, losses, and draws for a player in a specific matchup.
+
+    Args:
+        player_id: The ID of the player we're calculating stats for
+        games_a_vs_b: Games where player_id was player1 (white)
+        games_b_vs_a: Games where player_id was player2 (black)
+        rated: Whether to look at rated (True) or unrated (False) games
+
+    Returns:
+        Dictionary with 'wins', 'losses', 'draws' counts
+    """
+    # Filter games by rated status
+    rated_games_a_vs_b = games_a_vs_b.filter(games_a_vs_b["rated"] == rated)
+    rated_games_b_vs_a = games_b_vs_a.filter(games_b_vs_a["rated"] == rated)
+
+    wins = 0
+    losses = 0
+    draws = 0
+
+    # When player_id was player1 (white), result 'white' means they won
+    for game in rated_games_a_vs_b.iter_rows(named=True):
+        if game["result"] == "white":
+            wins += game["total_games"]  # Player won
+        elif game["result"] == "black":
+            losses += game["total_games"]  # Player lost
+        elif game["result"] == "draw":
+            draws += game["total_games"]  # Player drew
+
+    # When player_id was player2 (black), result 'black' means they won
+    for game in rated_games_b_vs_a.iter_rows(named=True):
+        if game["result"] == "black":
+            wins += game["total_games"]  # Player won
+        elif game["result"] == "white":
+            losses += game["total_games"]  # Player lost
+        elif game["result"] == "draw":
+            draws += game["total_games"]  # Player drew
+
+    return {"wins": wins, "losses": losses, "draws": draws}
