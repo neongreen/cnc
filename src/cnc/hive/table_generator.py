@@ -21,14 +21,14 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
 
     logger.info("Generating game counts table")
 
-    # Get known players (will be shown first) - exclude bots
+    # Get all known players (including bots) - will be shown first
     known_players: DataFrame = db.conn.execute(
-        "SELECT * FROM players WHERE bot = false ORDER BY display_name"
+        "SELECT * FROM players ORDER BY display_name"
     ).pl()
     logger.debug(f"Known players: {known_players}")
 
     # Get outsiders (players who played against known players but are not in known players list)
-    # Exclude bots from consideration
+    # Exclude bots from consideration when calculating outsiders
     outsiders = db.conn.execute("""
         SELECT DISTINCT hg_player
         FROM (
@@ -73,14 +73,14 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
         all_players.append(
             {
                 "id": outsider["hg_player"],
-                "display_name": outsider_nick,  # Use hivegame nick without HG# as display name
+                "display_name": f"@{outsider_nick}",  # Add @ prefix for outsiders
                 "hivegame_nick": outsider["hg_player"],
                 "is_known": False,
             }
         )
 
-    # Get game counts between all player pairs
-    # Exclude games involving bots
+    # Get game counts between all player pairs, separated by rated status
+    # Include games involving bots
     game_counts_query = """
         WITH player_pairs AS (
             SELECT 
@@ -92,12 +92,11 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                     WHEN known_black_player IS NOT NULL THEN known_black_player
                     ELSE hg_black_player
                 END AS player2,
+                rated,
                 COUNT(*) as games_played
             FROM hg_games
             WHERE (known_white_player IS NOT NULL OR known_black_player IS NOT NULL)
-            AND (known_white_player IS NULL OR known_white_player NOT IN (SELECT id FROM players WHERE bot = true))
-            AND (known_black_player IS NULL OR known_black_player NOT IN (SELECT id FROM players WHERE bot = true))
-            GROUP BY player1, player2
+            GROUP BY player1, player2, rated
             
             UNION ALL
             
@@ -110,20 +109,20 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                     WHEN known_white_player IS NOT NULL THEN known_white_player
                     ELSE hg_white_player
                 END AS player2,
+                rated,
                 COUNT(*) as games_played
             FROM hg_games
             WHERE (known_white_player IS NOT NULL OR known_black_player IS NOT NULL)
-            AND (known_white_player IS NULL OR known_white_player NOT IN (SELECT id FROM players WHERE bot = true))
-            AND (known_black_player IS NULL OR known_black_player NOT IN (SELECT id FROM players WHERE bot = true))
-            GROUP BY player1, player2
+            GROUP BY player1, player2, rated
         )
         SELECT 
             player1,
             player2,
+            rated,
             SUM(games_played) as total_games
         FROM player_pairs
         WHERE player1 != player2
-        GROUP BY player1, player2
+        GROUP BY player1, player2, rated
     """
 
     game_counts: DataFrame = db.conn.execute(game_counts_query).pl()
@@ -144,7 +143,7 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
             # For known players, show display name
             link_text = display_text
         else:
-            # For outsiders, show display name (which is already cleaned of HG#)
+            # For outsiders, show display name (which already has @ prefix)
             link_text = display_text
 
         # Extract the actual hivegame nick without HG# prefix for the URL
@@ -164,7 +163,7 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
             # For known players, show display name
             link_text = display_text
         else:
-            # For outsiders, show display name (which is already cleaned of HG#)
+            # For outsiders, show display name (which already has @ prefix)
             link_text = display_text
 
         # Extract the actual hivegame nick without HG# prefix for the URL
@@ -180,7 +179,7 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                 # Same player - show dash
                 table_html += '<td class="self">-</td>'
             else:
-                # Different players - find game count
+                # Different players - find game counts for rated and unrated
                 # Look for games between these two players
                 games = game_counts.filter(
                     (
@@ -194,10 +193,29 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                 )
 
                 if len(games) > 0:
-                    # Get the first row and extract the total_games value
-                    game_row = games.row(0)
-                    game_count = game_row[2]  # total_games is the third column
-                    table_html += f"<td>{game_count}</td>"
+                    # Separate rated and unrated games
+                    rated_games = games.filter(games["rated"] == True)
+                    unrated_games = games.filter(games["rated"] == False)
+
+                    rated_count = (
+                        rated_games["total_games"].sum() if len(rated_games) > 0 else 0
+                    )
+                    unrated_count = (
+                        unrated_games["total_games"].sum()
+                        if len(unrated_games) > 0
+                        else 0
+                    )
+
+                    if rated_count > 0 or unrated_count > 0:
+                        cell_html = f"<td>"
+                        if rated_count > 0:
+                            cell_html += f"{rated_count}"
+                        if unrated_count > 0:
+                            cell_html += f'<br><span style="font-size: 0.8em; color: #666;">{unrated_count}</span>'
+                        cell_html += "</td>"
+                        table_html += cell_html
+                    else:
+                        table_html += "<td></td>"
                 else:
                     table_html += "<td></td>"
 

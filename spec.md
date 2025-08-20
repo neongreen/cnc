@@ -57,3 +57,13 @@ ok now also exclude bots from the list of players for whom we should consider th
 
 also i still see HG# in the html output. it should never be there. HG# stands for a hivegame nick.
 its a tagged string used internally.
+
+--- spec update 4:
+
+ok everything from above has been implemented.
+
+now i want
+
+- outsider players to show up as @foo instead of foo
+- bot players should still show up, just not be considered when calculating outsiders
+- each cell should have two rows, one showing number of rated games, second in smaller gray font showing number of unrated games
