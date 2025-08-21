@@ -3,10 +3,9 @@
 group_order = [
   "emily",
   "crc",
-  "momoh",
-  "vivid",
-  "sted",
-  "jsaidoru",
+  "csc",
+  "via momoh",
+  "(shared)",
   "bot",
   "(outsider)",
 ]
@@ -24,6 +23,63 @@ groups = ["emily"]
 display_name = "Emily"
 hivegame = ["emily", "ParathaBread"]
 hivegame_current = "emily"
+
+# [players.hanna]
+# groups = ["emily"]
+# display_name = "Hanna"
+# hivegame = ["pocheshire"]
+
+# [players.elvira]
+# groups = ["emily"]
+# display_name = "Elvira"
+# hivegame = ["decibelvira"]
+
+## --- csc
+
+[players.hayden]
+groups = ["csc"]
+display_name = "Hayden"
+hivegame = ["Canis327O"]
+
+[players.vlad]
+groups = ["csc"]
+display_name = "Vladislav"
+hivegame = ["Vladivostik54"]
+
+[players.sandra]
+groups = ["csc"]
+display_name = "Sandra"
+hivegame = ["Sandra53"]
+
+[players.darkness]
+groups = ["csc"]
+display_name = "𝓓𝓪𝓻𝓴𝓷𝓮𝓼𝓼"
+hivegame = ["TheTimoby"]
+
+[players.senorflamingo]
+groups = ["csc"]
+display_name = "SenorFlamingo"
+hivegame = ["SenorFlamingo"]
+
+[players.frost]
+groups = ["csc"]
+display_name = "Elder Frost"
+hivegame = ["Frost"]
+
+[players.soossi]
+groups = ["csc"]
+display_name = "VANHAOMENA"
+hivegame = ["soossi"]
+
+[players.smear]
+groups = ["csc"]
+display_name = "Smear"
+hivegame = ["JijiDied"]
+
+[players.sjoerd]
+groups = ["csc"]
+display_name = "Sjoerd"
+hivegame = ["almostgood"]
 
 ## --- crc
 
@@ -49,22 +105,22 @@ display_name = "Chez"
 hivegame = ["Chezmosis"]
 
 [players.momoh]
-groups = ["crc", "momoh"]
+groups = ["crc"]
 display_name = "Momoh"
 hivegame = ["Momoh"]
 
 [players.vivid]
-groups = ["crc", "vivid"]
+groups = ["crc"]
 display_name = "vivid"
 hivegame = ["vivid"]
 
 [players.sted]
-groups = ["crc", "sted"]
+groups = ["crc"]
 display_name = "sted"
 hivegame = ["sted"]
 
 [players.jsaidoru]
-groups = ["crc", "jsaidoru"]
+groups = ["crc"]
 display_name = "jsaidoru"
 hivegame = ["iwanakeyboard", "csridge"]
 hivegame_current = "iwanakeyboard"
@@ -99,44 +155,44 @@ groups = ["crc"]
 display_name = "!kk!"
 hivegame = ["kk"]
 
-[players.sjoerd]
-groups = ["crc"]
-display_name = "Sjoerd"
-hivegame = ["almostgood"]
-
-[players.hayden]
-groups = ["crc"]
-display_name = "Hayden"
-hivegame = ["Canis327O"]
-
 [players.mrsir]
 groups = ["crc"]
 display_name = "MrSir"
 hivegame = ["Jejdjfjc"]
-
-[players.smear]
-groups = ["crc"]
-display_name = "Smear"
-hivegame = ["JijiDied"]
 
 [players.mylo]
 groups = ["crc"]
 display_name = "myloRAHH"
 hivegame = ["myloRAHH"]
 
+[players.world]
+groups = ["crc", "(shared)"]
+display_name = "world"
+hivegame = ["world"]
+
+[players.sus]
+groups = ["crc", "via momoh"]
+display_name = "Star/SUS100"
+hivegame = ["SUS100"]
+
 ## --- bots
 
 [players.easybot]
 groups = ["bot"]
-display_name = "1-easy"
+display_name = "easy"
 hivegame = ["nokamute-easy"]
 
 [players.mediumbot]
 groups = ["bot"]
-display_name = "2-medium"
+display_name = "medium"
 hivegame = ["nokamute-medium"]
 
 [players.hardbot]
 groups = ["bot"]
-display_name = "3-hard"
+display_name = "hard"
 hivegame = ["nokamute-hard"]
+
+[players.pepeke]
+groups = ["bot"]
+display_name = "pepeke"
+hivegame = ["pepeke"]
