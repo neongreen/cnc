@@ -213,10 +213,10 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                 if len(games_a_vs_b) > 0 or len(games_b_vs_a) > 0:
                     # Calculate wins, losses, draws for this player matchup
                     rated_stats = calculate_player_matchup_stats(
-                        row_player["id"], games_a_vs_b, games_b_vs_a, rated=True
+                        games_a_vs_b, games_b_vs_a, rated=True
                     )
                     unrated_stats = calculate_player_matchup_stats(
-                        row_player["id"], games_a_vs_b, games_b_vs_a, rated=False
+                        games_a_vs_b, games_b_vs_a, rated=False
                     )
 
                     # Determine cell class based on content
@@ -277,12 +277,11 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
 
 
 def calculate_player_matchup_stats(
-    player_id: str, games_a_vs_b: DataFrame, games_b_vs_a: DataFrame, rated: bool
+    games_a_vs_b: DataFrame, games_b_vs_a: DataFrame, rated: bool
 ) -> dict:
     """Calculate wins, losses, and draws for a player in a specific matchup.
 
     Args:
-        player_id: The ID of the player we're calculating stats for
         games_a_vs_b: Games where player_id was player1 (white)
         games_b_vs_a: Games where player_id was player2 (black)
         rated: Whether to look at rated (True) or unrated (False) games

@@ -15,7 +15,12 @@ run = 'pkill -f "dev_server.py" ; pkill -f "flask --app cnc.main:app" ; pkill wa
 
 [tasks.dev]
 description = "Start a dev server with reliable file watching and process management"
-run = "uv run scripts/dev_server.py"
+run = "uv run scripts/dev_server.py --build-command 'mise build'"
+
+[tasks."dev2"]
+run = """
+  watchexec --restart --debounce 500ms --no-meta 'mise build; mise dev:flask'
+"""
 
 [tasks.build]
 description = "Build static files without starting the server"

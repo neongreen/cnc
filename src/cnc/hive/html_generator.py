@@ -7,10 +7,9 @@ import flask
 
 from cnc.hive.config import get_config
 from cnc.hive.fetch_hive_games import GameCache
-from cnc.hive.games_data import create_games_list, merge_games_with_players
+from cnc.hive.games_data import create_games_list
 from cnc.hive.table_generator import generate_game_counts_table
 from cnc.hive.database import HiveDatabase
-from cnc.hive.player_ids import KnownPlayerId
 
 # Get logger for this module
 logger = structlog.get_logger()
@@ -30,9 +29,6 @@ def generate_hive_html() -> str:
     raw_games = create_games_list(
         [game for player_cache in all_games_raw.values() for game in player_cache.games]
     )
-
-    # Merge games with known players to get player IDs
-    games = merge_games_with_players(raw_games, known_players)
 
     # Create database instance and load data
     db = HiveDatabase()
