@@ -139,33 +139,40 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
     all_players.sort(key=sort_key)
 
     # Generate table HTML
-    table_html = """
-    <table class="matchup-table">
-        <thead>
-            <tr>
-                <th>
-                    <span style="">rated,</span>
-                    <span style="font-size: 0.7em; color: gray;">unrated</span>
-                </th>
-    """
+    table_html = '<table class="matchup-table">'
 
-    # Add column headers
-    for player in all_players:
-        display_text = player["display_name"]
-        if player["is_known"]:
-            # For known players, show display name
-            link_text = display_text
+    # Create a color palette for different player categories
+    category_colors = {
+        "known": "#e3f2fd",  # Light blue for known players
+        "bot": "#f3e5f5",  # Light purple for bots
+        "outsider": "#fff3e0",  # Light orange for outsiders
+    }
+
+    # Header row 1: Player names
+    table_html += (
+        "<thead><tr><th><span style="
+        '>rated,</span><span style="font-size: 0.7em; color: gray;">unrated</span></th>'
+    )  # Corner cell with rated/unrated label
+    for col_player in all_players:
+        table_html += f'<th><a href="https://hivegame.com/@/{col_player["hivegame_nick"]}" target="_blank" class="player-link">{col_player["display_name"]}</a></th>'
+    table_html += "</tr>"
+
+    # Header row 2: Player categories with colors
+    table_html += "<tr><th></th>"  # Empty corner cell
+    for col_player in all_players:
+        # Determine player category
+        if col_player["is_bot"]:
+            category = "bot"
+        elif col_player["id"] in [p["id"] for p in known_players.iter_rows(named=True)]:
+            category = "known"
         else:
-            # For outsiders, show display name (which already has @ prefix)
-            link_text = display_text
+            category = "outsider"
 
-        # Extract the actual hivegame nick without HG# prefix for the URL
-        hivegame_nick = player["hivegame_nick"]
-        if hivegame_nick.startswith("HG#"):
-            hivegame_nick = hivegame_nick[3:]  # Remove HG# prefix
+        # Get color for this category
+        bg_color = category_colors[category]
 
-        table_html += f'<th><a href="https://hivegame.com/@/{hivegame_nick}" target="_blank" class="player-link">{link_text}</a></th>'
-
+        # Create the category cell with colored background
+        table_html += f'<th style="background-color: {bg_color}; font-size: 0.8em; color: #666; padding: 4px;">{category}</th>'
     table_html += "</tr></thead><tbody>"
 
     # Add rows
