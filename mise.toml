@@ -4,6 +4,7 @@ settings.python.uv_venv_auto = true
 uv = "latest"
 deno = "latest"
 watchexec = "latest"
+fd = "latest"
 
 [tasks."dev:flask"]
 description = "Start a dev server"
@@ -58,3 +59,10 @@ run = "mise run dev:stop && sleep 1 && mise run dev"
 [tasks."find-unused-code"]
 description = "Find unused methods/functions"
 run = "uvx vulture src/ | rg 'method|function'"
+
+[tasks."add-license"]
+description = "Add CC0 license headers to source files"
+tools."go:github.com/google/addlicense" = "latest"
+run = """
+  fd -t f . -X addlicense -c "Emily" -l cc0 -f license-header.txt {}
+"""

@@ -2,7 +2,15 @@
 name = "cnc"
 version = "0.1.0"
 description = ""
+license = { text = "CC0-1.0" }
 requires-python = ">=3.13"
+classifiers = [
+    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "babel>=2.17.0",
     "cbor2>=5.7.0",
