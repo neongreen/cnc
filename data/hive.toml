@@ -7,12 +7,13 @@ group_order = [
   "via momoh",
   "(shared)",
   "bot",
+  "World Champion 2024",
   "(outsider)",
 ]
 # highlight games between crc players
-highlight_games = ["crc"]
+highlight_games = ["crc", "csc"]
 # fetch outsiders only for interesting players
-fetch_outsiders = ["emily", "crc"]
+fetch_outsiders = ["emily", "crc", "csc"]
 
 # --- Players ---
 
@@ -196,3 +197,10 @@ hivegame = ["nokamute-hard"]
 groups = ["bot"]
 display_name = "pepeke"
 hivegame = ["pepeke"]
+
+## --- others
+
+[players.suprisefish]
+groups = ["World Champion 2024"]
+display_name = "@suprisefish"
+hivegame = ["suprisefish"]

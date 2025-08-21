@@ -214,7 +214,7 @@ def fetch_games_between_players(
 
 def fetch_games_for_player(
     player: HG_PlayerId,
-    max_games: int = 100,  # TODO: actually keep going instead of just doing one batch
+    max_games: int = 200,  # TODO: actually keep going instead of just doing one batch
 ) -> list[HG_GameResponse]:
     """
     Fetch all games for a single player from hivegame.com

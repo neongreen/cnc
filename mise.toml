@@ -19,7 +19,7 @@ run = "uv run scripts/dev_server.py --build-command 'mise build'"
 
 [tasks."dev2"]
 run = """
-  watchexec --restart --debounce 500ms --no-meta 'mise build; mise dev:flask'
+  watchexec --restart --debounce 500ms --no-meta 'lsof -ti:5500 | xargs kill -9; mise build; mise dev:flask'
 """
 
 [tasks.build]

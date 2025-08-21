@@ -74,6 +74,7 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
                 "display_name": player["display_name"],
                 "groups": player["groups"],
                 "hivegame_nick": player["hivegame_current"],
+                "hivegame_nicks": player["hivegame_nicks"],  # Add all nicknames
                 "is_known": True,
             }
         )
@@ -95,29 +96,74 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
             }
         )
 
-    # Sort players by their group stacks using lexicographic ordering
-    # Just like Python's list comparison: ["crc"] < ["crc", "momoh"] < ["crc", "vivid"] < ["emily"]
+    # Calculate total games for each player
+    for player in all_players:
+        if player["is_known"]:
+            # For known players, count their games using their hivegame nicks
+            hivegame_nicks = player["hivegame_nicks"]
+            # Build a query to count games where any of their nicks appear
+            placeholders = ",".join(["?" for _ in hivegame_nicks])
+            query = f"""
+                SELECT COUNT(*) as count FROM hg_games 
+                WHERE hg_white_player IN ({placeholders}) OR hg_black_player IN ({placeholders})
+            """
+            # Pass the nicks twice (once for white, once for black)
+            params = hivegame_nicks + hivegame_nicks
+            result = db.conn.execute(query, params).fetchone()
+            player["total_games"] = result[0] if result else 0
+        else:
+            # For outsiders, count their games
+            outsider_nick = player["hivegame_nick"]
+            result = db.conn.execute(
+                """
+                SELECT COUNT(*) as count FROM hg_games 
+                WHERE hg_white_player = ? OR hg_black_player = ?
+            """,
+                [outsider_nick, outsider_nick],
+            ).fetchone()
+            player["total_games"] = result[0] if result else 0
+
+    # Sort players by their top-level group first, then by total games played
     def sort_key(player):
         groups = player["groups"]
-        # Convert groups to their positions in group_order for comparison
-        group_positions = []
-        for group in groups:
-            if group == "(outsider)":
-                group_positions.append(
-                    len(config.settings.group_order)
-                )  # Outsiders last
-            else:
-                try:
-                    group_positions.append(config.settings.group_order.index(group))
-                except ValueError:
-                    group_positions.append(
-                        len(config.settings.group_order)
-                    )  # Unknown groups last
+        if not groups:
+            return (len(config.settings.group_order), 0)  # No groups last
 
-        # Sort lexicographically by group positions (just like Python list comparison)
-        return group_positions
+        # Get the top-level group (first in the list)
+        top_group = groups[0]
+
+        # Get position of top-level group in group_order
+        if top_group == "(outsider)":
+            top_group_pos = len(config.settings.group_order)
+        else:
+            try:
+                top_group_pos = config.settings.group_order.index(top_group)
+            except ValueError:
+                top_group_pos = len(config.settings.group_order)
+
+        # For sorting within groups, we'll use total games (calculated later)
+        # For now, just sort by top group position
+        return top_group_pos
 
     all_players.sort(key=sort_key)
+
+    # Now sort within each top-level group by total games played
+    # Group players by their top-level group
+    grouped_players = {}
+    for player in all_players:
+        top_group = player["groups"][0] if player["groups"] else "(no-group)"
+        if top_group not in grouped_players:
+            grouped_players[top_group] = []
+        grouped_players[top_group].append(player)
+
+    # Sort each group by total games and reassemble the list
+    all_players = []
+    for group_name in config.settings.group_order + ["(outsider)"]:
+        if group_name in grouped_players:
+            # Sort this group by total games (descending - most games first)
+            group_players = grouped_players[group_name]
+            group_players.sort(key=lambda p: p.get("total_games", 0), reverse=True)
+            all_players.extend(group_players)
 
     # Get detailed game statistics between all player pairs
     game_stats_query = """
@@ -147,8 +193,15 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
     # Generate table HTML
     table_html = '<table class="matchup-table">'
 
-    # Header row 1: Player names
-    table_html += '<thead><tr><th><span>rated,</span><span style="font-size: 0.7em; color: gray;">unrated</span></th>'
+    # Header row 1: Total Games (moved to top)
+    table_html += '<thead><tr><th style="background-color: #f0f0f0; font-size: 0.8em; color: #666; padding: 4px;">Total Games</th>'
+    for col_player in all_players:
+        total_games = col_player.get("total_games", 0)
+        table_html += f'<th style="background-color: #f0f0f0; font-size: 0.8em; color: #666; padding: 4px;">{total_games}</th>'
+    table_html += "</tr>"
+
+    # Header row 2: Player names
+    table_html += '<tr><th><span>rated,</span><span style="font-size: 0.7em; color: gray;">unrated</span></th>'
     for col_player in all_players:
         # Extract the actual hivegame nick without HG# prefix for the URL
         hivegame_nick = col_player["hivegame_nick"]
@@ -168,18 +221,39 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
                 # This player has a group at this level
                 group = groups[group_level]
 
-                # Define colors for different groups
-                group_colors = {
-                    "emily": "#e3f2fd",  # Light blue
-                    "crc": "#c8e6c9",  # Light green
-                    "bot": "#f3e5f5",  # Light purple
-                    "(outsider)": "#fff3e0",  # Light orange
-                }
+                # Define a palette of colors for groups - assign dynamically based on order
+                group_color_palette = [
+                    "#e3f2fd",  # Light blue
+                    "#c8e6c9",  # Light green
+                    "#fff9c4",  # Light yellow
+                    "#fce4ec",  # Light pink
+                    "#f3e5f5",  # Light purple
+                    "#fff3e0",  # Light orange
+                    "#e0f2f1",  # Light teal
+                    "#fff8e1",  # Light amber
+                    "#fce4ec",  # Light pink
+                    "#e8eaf6",  # Light indigo
+                    "#f3e5f5",  # Light purple
+                    "#e0f7fa",  # Light cyan
+                ]
 
-                bg_color = group_colors.get(group, "#f5f5f5")
+                # Assign color based on group position in config order
+                if group == "(outsider)":
+                    # Outsiders get a special color
+                    bg_color = "#f5f5f5"  # Light orange
+                else:
+                    # For regular groups, find their position in the config order
+                    try:
+                        group_index = config.settings.group_order.index(group)
+                        # Use modulo to handle cases where there are more groups than colors
+                        color_index = group_index % len(group_color_palette)
+                        bg_color = group_color_palette[color_index]
+                    except ValueError:
+                        # Group not found in config order, use a neutral color
+                        bg_color = "#f5f5f5"  # Light gray
 
                 # Create the group cell with colored background
-                table_html += f'<th style="background-color: {bg_color}; font-size: 0.8em; color: #666; padding: 4px;">{group}</th>'
+                table_html += f'<th style="background-color: {bg_color}; font-size: 0.8em; color: #666; padding: 4px;">{group if group != "(outsider)" else ""}</th>'
             else:
                 # This player doesn't have a group at this level - show empty cell
                 table_html += '<th style="background-color: #f5f5f5; font-size: 0.8em; color: #666; padding: 4px;">&nbsp;</th>'
