@@ -1,6 +1,6 @@
 from pathlib import Path
 import tomllib
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from cnc.hive.player_ids import HG_PlayerId, KnownPlayerId
 
@@ -11,7 +11,7 @@ class KnownPlayer(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
     display_name: str
-    group: str
+    groups: list[str]
     hivegame: list[HG_PlayerId]
     hivegame_current: HG_PlayerId | None = None
 
@@ -34,8 +34,8 @@ class KnownPlayer(BaseModel):
 
     @property
     def is_bot(self) -> bool:
-        """Check if this player is a bot based on their group"""
-        return self.group == "bot"
+        """Check if this player is a bot based on their groups"""
+        return "bot" in self.groups
 
 
 class ConfigSettings(BaseModel):
@@ -51,6 +51,29 @@ class Config(BaseModel):
 
     settings: ConfigSettings
     players: dict[KnownPlayerId, KnownPlayer]
+
+    @model_validator(mode='after')
+    def validate_groups_in_order(self):
+        """Validate that all groups used by players are defined in group_order"""
+        valid_groups = set(self.settings.group_order)
+        valid_groups.add("(outsider)")  # Special group that doesn't need to be in group_order
+        
+        # Collect all groups used by players
+        used_groups = set()
+        for player_id, player in self.players.items():
+            for group in player.groups:
+                used_groups.add(group)
+        
+        # Check for undefined groups
+        undefined_groups = used_groups - valid_groups
+        if undefined_groups:
+            undefined_list = sorted(undefined_groups)
+            raise ValueError(
+                f"Groups {undefined_list} are used by players but not defined in settings.group_order. "
+                f"Current group_order: {self.settings.group_order}"
+            )
+        
+        return self
 
 
 def get_config(file_path: Path) -> Config:

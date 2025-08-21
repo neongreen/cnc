@@ -33,7 +33,7 @@ class HiveDatabase:
                 {
                     "id": player_id.tagged(),
                     "display_name": player_info.display_name,
-                    "group_name": player_info.group,
+                    "groups": player_info.groups,
                     "hivegame_nicks": [nick.tagged() for nick in player_info.hivegame],
                     "hivegame_current": (
                         player_info.hivegame_current or player_info.hivegame[0]
@@ -48,11 +48,11 @@ class HiveDatabase:
             # Insert players
             for player in players_data:
                 self.conn.execute(
-                    "INSERT INTO players (id, display_name, group_name, hivegame_nicks, hivegame_current) VALUES ($id, $display_name, $group_name, $hivegame_nicks, $hivegame_current)",
+                    "INSERT INTO players (id, display_name, groups, hivegame_nicks, hivegame_current) VALUES ($id, $display_name, $groups, $hivegame_nicks, $hivegame_current)",
                     {
                         "id": player["id"],
                         "display_name": player["display_name"],
-                        "group_name": player["group_name"],
+                        "groups": player["groups"],
                         "hivegame_nicks": player["hivegame_nicks"],
                         "hivegame_current": player["hivegame_current"],
                     },

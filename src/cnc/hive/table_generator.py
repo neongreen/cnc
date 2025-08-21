@@ -23,9 +23,9 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
 
     logger.info("Generating game counts table")
 
-    # Get all known players ordered by group according to config
+    # Get all known players
     known_players: DataFrame = db.conn.execute(
-        "SELECT * FROM players ORDER BY group_name, display_name"
+        "SELECT * FROM players ORDER BY display_name"
     ).pl()
     logger.debug(f"Known players: {known_players}")
 
@@ -42,7 +42,7 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
             AND known_black_player IS NOT NULL
             AND known_black_player IN (
                 SELECT id FROM players 
-                WHERE group_name = ANY($fetch_outsiders_groups)
+                WHERE array_has_any(groups, $fetch_outsiders_groups)
             )
             UNION
             SELECT hg_black_player AS hg_player
@@ -51,7 +51,7 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
             AND known_black_player IS NULL
             AND known_white_player IN (
                 SELECT id FROM players 
-                WHERE group_name = ANY($fetch_outsiders_groups)
+                WHERE array_has_any(groups, $fetch_outsiders_groups)
             )
         ) AS outsiders
         ORDER BY hg_player
@@ -63,27 +63,20 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
 
     logger.debug(f"Outsiders: {outsiders}")
 
-    # Create the complete player order according to config.settings.group_order
+    # Create the complete player order according to group stacks
     all_players = []
 
-    # Add known players in the order specified by group_order
-    for group_name in config.settings.group_order:
-        if group_name == "(outsider)":
-            continue  # Handle outsiders separately
-
-        # Get players from this group
-        group_players = known_players.filter(known_players["group_name"] == group_name)
-
-        for player in group_players.iter_rows(named=True):
-            all_players.append(
-                {
-                    "id": player["id"],
-                    "display_name": player["display_name"],
-                    "group": player["group_name"],
-                    "hivegame_nick": player["hivegame_current"],
-                    "is_known": True,
-                }
-            )
+    # Add known players
+    for player in known_players.iter_rows(named=True):
+        all_players.append(
+            {
+                "id": player["id"],
+                "display_name": player["display_name"],
+                "groups": player["groups"],
+                "hivegame_nick": player["hivegame_current"],
+                "is_known": True,
+            }
+        )
 
     # Add outsiders at the end
     for outsider in outsiders.iter_rows(named=True):
@@ -97,10 +90,34 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
                 "id": outsider["hg_player"],
                 "display_name": f"@{outsider_nick}",  # Add @ prefix for outsiders
                 "hivegame_nick": outsider["hg_player"],
-                "group": "(outsider)",
+                "groups": ["(outsider)"],
                 "is_known": False,
             }
         )
+
+    # Sort players by their group stacks using lexicographic ordering
+    # Just like Python's list comparison: ["crc"] < ["crc", "momoh"] < ["crc", "vivid"] < ["emily"]
+    def sort_key(player):
+        groups = player["groups"]
+        # Convert groups to their positions in group_order for comparison
+        group_positions = []
+        for group in groups:
+            if group == "(outsider)":
+                group_positions.append(
+                    len(config.settings.group_order)
+                )  # Outsiders last
+            else:
+                try:
+                    group_positions.append(config.settings.group_order.index(group))
+                except ValueError:
+                    group_positions.append(
+                        len(config.settings.group_order)
+                    )  # Unknown groups last
+
+        # Sort lexicographically by group positions (just like Python list comparison)
+        return group_positions
+
+    all_players.sort(key=sort_key)
 
     # Get detailed game statistics between all player pairs
     game_stats_query = """
@@ -124,11 +141,14 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
     game_stats: DataFrame = db.conn.execute(game_stats_query).pl()
     logger.debug(f"Game stats: {game_stats}")
 
+    # Determine the maximum number of groups any player has
+    max_groups = max(len(player["groups"]) for player in all_players)
+
     # Generate table HTML
     table_html = '<table class="matchup-table">'
 
     # Header row 1: Player names
-    table_html += '<thead><tr><th><span>rated,</span><span style="font-size: 0.7em; color: gray;">unrated</span></th>'  # Corner cell with rated/unrated label
+    table_html += '<thead><tr><th><span>rated,</span><span style="font-size: 0.7em; color: gray;">unrated</span></th>'
     for col_player in all_players:
         # Extract the actual hivegame nick without HG# prefix for the URL
         hivegame_nick = col_player["hivegame_nick"]
@@ -138,24 +158,35 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
         table_html += f'<th><a href="https://hivegame.com/@/{hivegame_nick}" target="_blank" class="player-link">{col_player["display_name"]}</a></th>'
     table_html += "</tr>"
 
-    # Header row 2: Player groups with colors
-    table_html += "<tr><th></th>"  # Empty corner cell
-    for col_player in all_players:
-        group = col_player["group"]
+    # Generate stacked group header rows
+    for group_level in range(max_groups):
+        table_html += "<tr><th></th>"  # Empty corner cell
+        for col_player in all_players:
+            groups = col_player["groups"]
 
-        # Define colors for different groups
-        group_colors = {
-            "emily": "#e3f2fd",  # Light blue
-            "crc": "#c8e6c9",  # Light green
-            "bot": "#f3e5f5",  # Light purple
-            "(outsider)": "#fff3e0",  # Light orange
-        }
+            if group_level < len(groups):
+                # This player has a group at this level
+                group = groups[group_level]
 
-        bg_color = group_colors.get(group, "#f5f5f5")
+                # Define colors for different groups
+                group_colors = {
+                    "emily": "#e3f2fd",  # Light blue
+                    "crc": "#c8e6c9",  # Light green
+                    "bot": "#f3e5f5",  # Light purple
+                    "(outsider)": "#fff3e0",  # Light orange
+                }
 
-        # Create the group cell with colored background
-        table_html += f'<th style="background-color: {bg_color}; font-size: 0.8em; color: #666; padding: 4px;">{group}</th>'
-    table_html += "</tr></thead><tbody>"
+                bg_color = group_colors.get(group, "#f5f5f5")
+
+                # Create the group cell with colored background
+                table_html += f'<th style="background-color: {bg_color}; font-size: 0.8em; color: #666; padding: 4px;">{group}</th>'
+            else:
+                # This player doesn't have a group at this level - show empty cell
+                table_html += '<th style="background-color: #f5f5f5; font-size: 0.8em; color: #666; padding: 4px;">&nbsp;</th>'
+
+        table_html += "</tr>"
+
+    table_html += "</thead><tbody>"
 
     # Add rows
     for row_player in all_players:
@@ -198,11 +229,19 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
                     # Determine cell class based on content and highlighting
                     cell_class = "has-matches"
 
-                    # Check if this should be highlighted (both players in highlight_games groups)
-                    if (
-                        row_player["group"] in config.settings.highlight_games
-                        and col_player["group"] in config.settings.highlight_games
-                    ):
+                    # Check if this should be highlighted (both players have groups in highlight_games)
+                    row_highlight_groups = [
+                        g
+                        for g in row_player["groups"]
+                        if g in config.settings.highlight_games
+                    ]
+                    col_highlight_groups = [
+                        g
+                        for g in col_player["groups"]
+                        if g in config.settings.highlight_games
+                    ]
+
+                    if row_highlight_groups and col_highlight_groups:
                         cell_class += " highlighted"
 
                     if (
@@ -255,7 +294,9 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
 
     table_html += "</tbody></table>"
 
-    logger.info(f"Generated table with {len(all_players)} players")
+    logger.info(
+        f"Generated table with {len(all_players)} players and {max_groups} group levels"
+    )
 
     return table_html
 

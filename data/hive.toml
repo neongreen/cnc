@@ -1,6 +1,15 @@
 [settings]
 # order of player groups in the table
-group_order = ["emily", "crc", "bot", "(outsider)"]
+group_order = [
+  "emily",
+  "crc",
+  "momoh",
+  "vivid",
+  "sted",
+  "jsaidoru",
+  "bot",
+  "(outsider)",
+]
 # highlight games between crc players
 highlight_games = ["crc"]
 # fetch outsiders only for interesting players
@@ -11,7 +20,7 @@ fetch_outsiders = ["emily", "crc"]
 ## --- emily
 
 [players.emily]
-group = "emily"
+groups = ["emily"]
 display_name = "Emily"
 hivegame = ["emily", "ParathaBread"]
 hivegame_current = "emily"
@@ -19,115 +28,115 @@ hivegame_current = "emily"
 ## --- crc
 
 [players.tamp]
-group = "crc"
+groups = ["crc"]
 display_name = "Tamp"
 hivegame = ["antTenna", "im0elobro"]
 hivegame_current = "antTenna"
 
 [players.rick]
-group = "crc"
+groups = ["crc"]
 display_name = "Rick"
 hivegame = ["VCube1003"]
 
 [players.yew]
-group = "crc"
+groups = ["crc"]
 display_name = "Yew"
 hivegame = ["Yew"]
 
 [players.chez]
-group = "crc"
+groups = ["crc"]
 display_name = "Chez"
 hivegame = ["Chezmosis"]
 
 [players.momoh]
-group = "crc"
+groups = ["crc", "momoh"]
 display_name = "Momoh"
 hivegame = ["Momoh"]
 
 [players.vivid]
-group = "crc"
+groups = ["crc", "vivid"]
 display_name = "vivid"
 hivegame = ["vivid"]
 
 [players.sted]
-group = "crc"
+groups = ["crc", "sted"]
 display_name = "sted"
 hivegame = ["sted"]
 
 [players.jsaidoru]
-group = "crc"
+groups = ["crc", "jsaidoru"]
 display_name = "jsaidoru"
 hivegame = ["iwanakeyboard", "csridge"]
 hivegame_current = "iwanakeyboard"
 
 [players.kyobir]
-group = "crc"
+groups = ["crc"]
 display_name = "Kyobir"
 hivegame = ["Stickbug"]
 
 [players.kuyi]
-group = "crc"
+groups = ["crc"]
 display_name = "Kuyi"
 hivegame = ["Zxelpski"]
 
 [players.surviv]
-group = "crc"
+groups = ["crc"]
 display_name = "Surviv"
 hivegame = ["Surviv34"]
 
 [players.silvy]
-group = "crc"
+groups = ["crc"]
 display_name = "Silvy"
 hivegame = ["silvy0711"]
 
 [players.sealand]
-group = "crc"
+groups = ["crc"]
 display_name = "Sealand"
 hivegame = ["Sealandball"]
 
 [players.kk]
-group = "crc"
+groups = ["crc"]
 display_name = "!kk!"
 hivegame = ["kk"]
 
 [players.sjoerd]
-group = "crc"
+groups = ["crc"]
 display_name = "Sjoerd"
 hivegame = ["almostgood"]
 
 [players.hayden]
-group = "crc"
+groups = ["crc"]
 display_name = "Hayden"
 hivegame = ["Canis327O"]
 
 [players.mrsir]
-group = "crc"
+groups = ["crc"]
 display_name = "MrSir"
 hivegame = ["Jejdjfjc"]
 
 [players.smear]
-group = "crc"
+groups = ["crc"]
 display_name = "Smear"
 hivegame = ["JijiDied"]
 
 [players.mylo]
-group = "crc"
+groups = ["crc"]
 display_name = "myloRAHH"
 hivegame = ["myloRAHH"]
 
 ## --- bots
 
 [players.easybot]
-group = "bot"
+groups = ["bot"]
 display_name = "1-easy"
 hivegame = ["nokamute-easy"]
 
 [players.mediumbot]
-group = "bot"
+groups = ["bot"]
 display_name = "2-medium"
 hivegame = ["nokamute-medium"]
 
 [players.hardbot]
-group = "bot"
+groups = ["bot"]
 display_name = "3-hard"
 hivegame = ["nokamute-hard"]

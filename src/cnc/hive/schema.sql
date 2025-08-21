@@ -8,7 +8,7 @@ CREATE TYPE game_result AS ENUM ('white', 'black', 'draw');
 CREATE TABLE players (
     id TEXT PRIMARY KEY,           -- player#emily
     display_name TEXT NOT NULL,    -- "Emily"
-    group_name TEXT NOT NULL,      -- "emily", "crc", "bot"
+    groups TEXT[] NOT NULL,        -- ["emily"], ["crc"], ["crc", "momoh"]
     hivegame_nicks TEXT[] NOT NULL,  -- ["HG#ParathaBread", "HG#emily"]
     hivegame_current TEXT NOT NULL  -- "HG#emily"
 );
