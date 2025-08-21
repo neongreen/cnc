@@ -4,16 +4,18 @@ from polars import DataFrame
 import structlog
 
 from cnc.hive.database import HiveDatabase
+from cnc.hive.config import Config
 
 # Get logger for this module
 logger = structlog.get_logger()
 
 
-def generate_game_counts_table(db: HiveDatabase) -> str:
+def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
     """Generate a table showing game counts between players
 
     Args:
         db: HiveDatabase instance containing the data
+        config: Configuration from hive.toml
 
     Returns:
         HTML table string
@@ -21,50 +23,69 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
 
     logger.info("Generating game counts table")
 
-    # Get all known players (including bots) - will be shown first
+    # Get all known players ordered by group according to config
     known_players: DataFrame = db.conn.execute(
-        "SELECT * FROM players ORDER BY display_name"
+        "SELECT * FROM players ORDER BY group_name, display_name"
     ).pl()
     logger.debug(f"Known players: {known_players}")
 
     # Get outsiders (players who played against known players but are not in known players list)
-    # Exclude bots from consideration when calculating outsiders
-    outsiders = db.conn.execute("""
+    # Only consider outsiders for games involving players from groups in fetch_outsiders
+    fetch_outsiders_groups = config.settings.fetch_outsiders
+
+    outsiders_query = """
         SELECT DISTINCT hg_player
         FROM (
             SELECT hg_white_player AS hg_player
             FROM hg_games
             WHERE known_white_player IS NULL
             AND known_black_player IS NOT NULL
-            AND known_black_player NOT IN (SELECT id FROM players WHERE bot = true)
+            AND known_black_player IN (
+                SELECT id FROM players 
+                WHERE group_name = ANY($fetch_outsiders_groups)
+            )
             UNION
             SELECT hg_black_player AS hg_player
             FROM hg_games
             WHERE known_white_player IS NOT NULL
             AND known_black_player IS NULL
-            AND known_white_player NOT IN (SELECT id FROM players WHERE bot = true)
+            AND known_white_player IN (
+                SELECT id FROM players 
+                WHERE group_name = ANY($fetch_outsiders_groups)
+            )
         ) AS outsiders
         ORDER BY hg_player
-    """).pl()
+    """
+
+    outsiders = db.conn.execute(
+        outsiders_query, {"fetch_outsiders_groups": fetch_outsiders_groups}
+    ).pl()
 
     logger.debug(f"Outsiders: {outsiders}")
 
-    # Create the complete player order: known players first, then outsiders
+    # Create the complete player order according to config.settings.group_order
     all_players = []
 
-    # Add known players
-    for player in known_players.iter_rows(named=True):
-        all_players.append(
-            {
-                "id": player["id"],
-                "display_name": player["display_name"],
-                "hivegame_nick": player["hivegame_current"],
-                "is_known": True,
-                "is_bot": player["bot"],
-            }
-        )
+    # Add known players in the order specified by group_order
+    for group_name in config.settings.group_order:
+        if group_name == "(outsider)":
+            continue  # Handle outsiders separately
 
-    # Add outsiders
+        # Get players from this group
+        group_players = known_players.filter(known_players["group_name"] == group_name)
+
+        for player in group_players.iter_rows(named=True):
+            all_players.append(
+                {
+                    "id": player["id"],
+                    "display_name": player["display_name"],
+                    "group": player["group_name"],
+                    "hivegame_nick": player["hivegame_current"],
+                    "is_known": True,
+                }
+            )
+
+    # Add outsiders at the end
     for outsider in outsiders.iter_rows(named=True):
         # Extract the actual hivegame nick without HG# prefix for display
         outsider_nick = outsider["hg_player"]
@@ -76,13 +97,12 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                 "id": outsider["hg_player"],
                 "display_name": f"@{outsider_nick}",  # Add @ prefix for outsiders
                 "hivegame_nick": outsider["hg_player"],
+                "group": "(outsider)",
                 "is_known": False,
-                "is_bot": False,
             }
         )
 
-    # Get detailed game statistics between all player pairs, separated by rated status
-    # Include games involving bots
+    # Get detailed game statistics between all player pairs
     game_stats_query = """
         SELECT 
             CASE 
@@ -104,94 +124,50 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
     game_stats: DataFrame = db.conn.execute(game_stats_query).pl()
     logger.debug(f"Game stats: {game_stats}")
 
-    # Calculate total games per player for sorting
-    player_total_games = {}
-    for player in all_players:
-        player_id = player["id"]
-        total = 0
-
-        # Count games where this player appears
-        player_games = game_stats.filter(
-            (game_stats["player1"] == player_id) | (game_stats["player2"] == player_id)
-        )
-
-        if len(player_games) > 0:
-            total = player_games["total_games"].sum()
-
-        player_total_games[player_id] = total
-
-    # Sort players: known players first (by game count), then bots (by game count), then outsiders (by game count)
-    def sort_key(player):
-        player_id = player["id"]
-        total_games = player_total_games.get(player_id, 0)
-
-        if player["is_known"]:
-            if player["is_bot"]:
-                return (1, -total_games)  # Bots second, sorted by game count desc
-            else:
-                return (
-                    0,
-                    -total_games,
-                )  # Known non-bots first, sorted by game count desc
-        else:
-            return (2, -total_games)  # Outsiders third, sorted by game count desc
-
-    all_players.sort(key=sort_key)
-
     # Generate table HTML
     table_html = '<table class="matchup-table">'
 
-    # Create a color palette for different player categories
-    category_colors = {
-        "known": "#e3f2fd",  # Light blue for known players
-        "bot": "#f3e5f5",  # Light purple for bots
-        "outsider": "#fff3e0",  # Light orange for outsiders
-    }
-
     # Header row 1: Player names
-    table_html += (
-        "<thead><tr><th><span style="
-        '>rated,</span><span style="font-size: 0.7em; color: gray;">unrated</span></th>'
-    )  # Corner cell with rated/unrated label
+    table_html += '<thead><tr><th><span>rated,</span><span style="font-size: 0.7em; color: gray;">unrated</span></th>'  # Corner cell with rated/unrated label
     for col_player in all_players:
-        table_html += f'<th><a href="https://hivegame.com/@/{col_player["hivegame_nick"]}" target="_blank" class="player-link">{col_player["display_name"]}</a></th>'
+        # Extract the actual hivegame nick without HG# prefix for the URL
+        hivegame_nick = col_player["hivegame_nick"]
+        if hivegame_nick.startswith("HG#"):
+            hivegame_nick = hivegame_nick[3:]  # Remove HG# prefix
+
+        table_html += f'<th><a href="https://hivegame.com/@/{hivegame_nick}" target="_blank" class="player-link">{col_player["display_name"]}</a></th>'
     table_html += "</tr>"
 
-    # Header row 2: Player categories with colors
+    # Header row 2: Player groups with colors
     table_html += "<tr><th></th>"  # Empty corner cell
     for col_player in all_players:
-        # Determine player category
-        if col_player["is_bot"]:
-            category = "bot"
-        elif col_player["id"] in [p["id"] for p in known_players.iter_rows(named=True)]:
-            category = "known"
-        else:
-            category = "outsider"
+        group = col_player["group"]
 
-        # Get color for this category
-        bg_color = category_colors[category]
+        # Define colors for different groups
+        group_colors = {
+            "emily": "#e3f2fd",  # Light blue
+            "crc": "#c8e6c9",  # Light green
+            "bot": "#f3e5f5",  # Light purple
+            "(outsider)": "#fff3e0",  # Light orange
+        }
 
-        # Create the category cell with colored background
-        table_html += f'<th style="background-color: {bg_color}; font-size: 0.8em; color: #666; padding: 4px;">{category}</th>'
+        bg_color = group_colors.get(group, "#f5f5f5")
+
+        # Create the group cell with colored background
+        table_html += f'<th style="background-color: {bg_color}; font-size: 0.8em; color: #666; padding: 4px;">{group}</th>'
     table_html += "</tr></thead><tbody>"
 
     # Add rows
     for row_player in all_players:
         # Row header
         display_text = row_player["display_name"]
-        if row_player["is_known"]:
-            # For known players, show display name
-            link_text = display_text
-        else:
-            # For outsiders, show display name (which already has @ prefix)
-            link_text = display_text
 
         # Extract the actual hivegame nick without HG# prefix for the URL
         hivegame_nick = row_player["hivegame_nick"]
         if hivegame_nick.startswith("HG#"):
             hivegame_nick = hivegame_nick[3:]  # Remove HG# prefix
 
-        table_html += f'<tr><th><a href="https://hivegame.com/@/{hivegame_nick}" target="_blank" class="player-link">{link_text}</a></th>'
+        table_html += f'<tr><th><a href="https://hivegame.com/@/{hivegame_nick}" target="_blank" class="player-link">{display_text}</a></th>'
 
         # Add game count cells
         for col_player in all_players:
@@ -219,8 +195,16 @@ def generate_game_counts_table(db: HiveDatabase) -> str:
                         games_a_vs_b, games_b_vs_a, rated=False
                     )
 
-                    # Determine cell class based on content
+                    # Determine cell class based on content and highlighting
                     cell_class = "has-matches"
+
+                    # Check if this should be highlighted (both players in highlight_games groups)
+                    if (
+                        row_player["group"] in config.settings.highlight_games
+                        and col_player["group"] in config.settings.highlight_games
+                    ):
+                        cell_class += " highlighted"
+
                     if (
                         rated_stats["wins"] == 0
                         and rated_stats["losses"] == 0

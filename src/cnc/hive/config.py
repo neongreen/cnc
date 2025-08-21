@@ -11,9 +11,9 @@ class KnownPlayer(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
     display_name: str
+    group: str
     hivegame: list[HG_PlayerId]
     hivegame_current: HG_PlayerId | None = None
-    bot: bool = False
 
     @property
     def current_nick(self) -> HG_PlayerId:
@@ -32,11 +32,18 @@ class KnownPlayer(BaseModel):
             f"multiple nicks and no hivegame_current set"
         )
 
+    @property
+    def is_bot(self) -> bool:
+        """Check if this player is a bot based on their group"""
+        return self.group == "bot"
+
 
 class ConfigSettings(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
-    skip_highlight: list[KnownPlayerId]
+    group_order: list[str]
+    highlight_games: list[str]
+    fetch_outsiders: list[str]
 
 
 class Config(BaseModel):

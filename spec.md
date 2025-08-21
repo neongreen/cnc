@@ -1,90 +1,97 @@
-Okay, here is your specification. When I run misa build, there should be generated a hive HTML file containing a matrix of games. It should first list, like if you look at the column order, it should first have the players from the known players list. And then outsiders, meaning everyone who played with the known players. For each player, it must give the hive game, Nick, as in a link. And for players, for current players, like for known players, it's going to be the current Nick. And for the other players, well, they are not known. So the only thing we know is the Nick. And that's what we're going to use for the link. For what is shown, please show the display name for known players and show at hive game Nick for the other players for the outsiders. In each cell of the table, there should be a number how many games were played against like between the spare players, including both white versus black and black versus white. The logic as much as possible should be done in either SQL or polars data frames. And as much as possible, when a function that generates, let's say, like we have a function in table generator, but we will write it generates a table. Now, this function must only accept one parameter, which is the database, kind of like the hive database class instance. It's like all the logic of querying the database for stuff that is needed will be inside that function. Like we don't want to we don't want to separate the database querying and table generation because when doing table generation, we don't know like they are kind of tied closely together. We don't know in advance what data we will need. And we cannot create like a need and proper interface that would just just make sure that the function contains only or takes only that single database object. Logic should be in SQL and or polars data frames as much as possible. I mean the logic of getting the data like click, it should give exactly the data that is needed.
+# Hive Configuration Update Implementation Plan
 
-when i'm back i will run `mise build` and i expect to see the fully correct table in the `hive.html` file
+## Overview
 
-as a sanity check, if the file contains "ParathaBread", it's wrong. ParathaBread is the hivegame nick of a known player (emily).
-thus, it must always be displayed as "Emily".
+Update the table generator and related components to use the new group-based configuration system instead of hardcoded logic.
 
-i also expect that `mise pyright` will not report any errors or warnings.
+## Key Changes Made to hive.toml
 
----
+### 1. Settings Section Transformation
 
-spec update 1:
+- **Removed**: `skip_highlight = ["emily", "easybot", "mediumbot", "hardbot"]`
+- **Added**:
+  - `group_order = ["emily", "crc", "bot", "(outsider)"]` - defines display order
+  - `highlight_games = ["crc"]` - highlights games between CRC players
+  - `fetch_outsiders = ["emily", "crc"]` - only fetch outsider games for these groups
 
-duckdb supports named parameters just with the dollar instead of the colon.
-also when the players havent played any games, the cell must be empty instead of 0.
+### 2. Player Structure Changes
 
-Example of named parameters:
+- **Added**: `group` field to every player (emily, crc, bot)
+- **Removed**: `bot = true` from bot players (now using `group = "bot"` instead)
+- **Added**: Clear section headers for organization
 
+## Implementation Changes Required
+
+### 1. Configuration Models (`src/cnc/hive/config.py`)
+
+- Update `ConfigSettings` to include new fields:
+  - `group_order: list[str]`
+  - `highlight_games: list[str]`
+  - `fetch_outsiders: list[str]`
+- Update `KnownPlayer` to include `group: str` field
+- Remove `bot: bool` field (replaced by group system)
+
+### 2. Database Schema (`src/cnc/hive/schema.sql`)
+
+- Replace `bot BOOLEAN DEFAULT FALSE` with `group TEXT NOT NULL`
+- Update any existing data migration if needed
+
+### 3. Table Generator (`src/cnc/hive/table_generator.py`)
+
+- **Pass configuration to function**: `generate_game_counts_table(db: HiveDatabase, config: Config)`
+- **Respect group_order**: Sort players according to `config.settings.group_order`
+- **Dynamic outsider calculation**: Use `config.settings.fetch_outsiders` instead of hardcoded SQL
+- **Implement highlighting**: Add CSS classes for games between players in `config.settings.highlight_games`
+
+### 4. Database Operations (`src/cnc/hive/database.py`)
+
+- Update `load_toml_data` to handle `group` field instead of `bot`
+- Update any SQL queries that reference the old `bot` field
+
+### 5. HTML Generation (`src/cnc/hive/html_generator.py`)
+
+- Pass config to table generator
+- Update template rendering to handle new highlighting
+
+## Key Principles
+
+### Configuration-Driven, Not Hardcoded
+
+- **Outsider calculation**: Defined by `fetch_outsiders = ["emily", "crc"]` in TOML
+- **Group ordering**: Defined by `group_order` in TOML
+- **Game highlighting**: Defined by `highlight_games` in TOML
+- **No hardcoded group names** in SQL or Python code (except "outsider" which is special)
+
+### Outsider Logic
+
+Instead of hardcoded SQL like:
+
+```sql
+WHERE known_black_player NOT IN (SELECT id FROM players WHERE bot = true)
 ```
-import duckdb
 
-res = duckdb.execute("""
-    SELECT
-        $my_param,
-        $other_param,
-        $also_param
-    """,
-    {
-        "my_param": 5,
-        "other_param": "DuckDB",
-        "also_param": [42]
-    }
-).fetchall()
-print(res)
+Use configuration-driven approach:
+
+```sql
+WHERE known_black_player NOT IN (
+    SELECT id FROM players
+    WHERE group = ANY($fetch_outsiders_groups)
+)
 ```
 
-do not use `$0`, `$1`, `$2`, etc.
+## Expected Results
 
----
+1. **Players display in specified group order**: emily → crc → bot → outsider
+2. **CRC vs CRC games are highlighted** with special styling
+3. **Outsider games only calculated** for players from groups in `fetch_outsiders`
+4. **System is extensible** - easy to add new groups without code changes
+5. **Configuration is the single source of truth** for behavior
 
-spec update 2:
+## Files to Modify
 
-sample hivegame.com link:
-
-- https://hivegame.com/@/emily
-
-If you see `@emily` anywhere, it's wrong.
-
-If you see `HG#` or `player#` in the output, it's also wrong.
-those are tagged strings used internally.
-
----
-
-spec update 3:
-
-ok now also exclude bots from the list of players for whom we should consider the outsiders thing. like, i want to see opponents of known players but not of known player-bots
-
-also i still see HG# in the html output. it should never be there. HG# stands for a hivegame nick.
-its a tagged string used internally.
-
---- spec update 4:
-
-ok everything from above has been implemented.
-
-now i want
-
-- outsider players to show up as @foo instead of foo
-- bot players should still show up, just not be considered when calculating outsiders
-- each cell should have two rows, one showing number of rated games, second in smaller gray font showing number of unrated games
-
---- spec update 5:
-
-ok and now i want:
-
-- look at the version at https://neongreen.github.io/cnc/hive.html
-- note all things that were lost in the process of rewriting the table generator
-- list them in chat
-- dont implement them yet, just note them
-
---- spec update 6:
-
-ok and now i want:
-
-- detailed game statistics (wins-losses-draws) instead of just total game counts
-- table header with "rated, unrated" label
-- CSS classes for cell styling (has-matches, no-matches, highlighted, self-match)
-- enhanced CSS styling with visual distinction between different types of cells
-- enhanced table description explaining wins-losses-draws format
-- monospace font
-- players sorted by number of games played (but still first the known players, then bots, then outsiders)
+- `src/cnc/hive/config.py` - Update models
+- `src/cnc/hive/schema.sql` - Update database schema
+- `src/cnc/hive/table_generator.py` - Implement new logic
+- `src/cnc/hive/database.py` - Update data loading
+- `src/cnc/hive/html_generator.py` - Pass config through
+- `templates/hive.html.j2` - Add highlighting CSS classes

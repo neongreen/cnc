@@ -35,7 +35,7 @@ def generate_hive_html() -> str:
     db.load_data(config, raw_games)  # Use raw_games, not merged games
 
     # Generate game counts table using the database
-    game_counts_table = generate_game_counts_table(db)
+    game_counts_table = generate_game_counts_table(db, config)
 
     # Close database connection
     db.close()
