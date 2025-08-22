@@ -17,9 +17,10 @@ group_order = [
   "WC 2018",
   "WC 2017",
   "also emily",
+  "SCB",
 ]
 # highlight games between crc players
-highlight_games = ["crc", "csc"]
+highlight_games = ["crc", "csc", "SCB"]
 # fetch outsiders only for interesting players
 fetch_outsiders = ["emily", "crc", "csc"]
 
@@ -42,6 +43,16 @@ hivegame = ["pocheshire"]
 groups = ["also emily"]
 display_name = "Elvira"
 hivegame = ["decibelvira"]
+
+[players.domino]
+groups = ["also emily", "SCB"]
+display_name = "Dominik"
+hivegame = ["domino"]
+
+[players.marek]
+groups = ["also emily", "SCB"]
+display_name = "Marek"
+hivegame = ["marekbauer07"]
 
 ## --- csc
 

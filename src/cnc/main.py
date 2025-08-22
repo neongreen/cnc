@@ -17,6 +17,7 @@ import structlog
 
 from cnc.utils import setup_logging
 from cnc.hive.html_generator import generate_hive_html
+from cnc.hive.html_generator_react import generate_hive_html_react
 from cnc.maturity import (
     generate_maturity_html,
     load_maturity_data,
@@ -55,11 +56,17 @@ def build():
         )
         logger.info(f"Generated maturity HTML at {maturity_output_path}")
 
-        # hive
-        logger.info("Generating hive HTML")
+        # hive (old version)
+        logger.info("Generating hive HTML (old version)")
         hive_output_path = output_dir / "hive.html"
         open(hive_output_path, "w").write(generate_hive_html())
         logger.info(f"Generated hive HTML at {hive_output_path}")
+
+        # hive (React version)
+        logger.info("Generating hive HTML (React version)")
+        hive_react_output_path = output_dir / "hive2.html"
+        open(hive_react_output_path, "w").write(generate_hive_html_react())
+        logger.info(f"Generated hive React HTML at {hive_react_output_path}")
 
         # everything else
         logger.info("Copying static files")
@@ -77,6 +84,11 @@ def serve_html():
 @app.route("/hive")
 def serve_hive():
     return send_from_directory(root / "build", "hive.html")
+
+
+@app.route("/hive2")
+def serve_hive_react():
+    return send_from_directory(root / "build", "hive2.html")
 
 
 @app.route("/<path:filename>")
