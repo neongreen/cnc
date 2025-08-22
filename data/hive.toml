@@ -8,6 +8,7 @@ group_order = [
   "(shared)",
   "bot",
   "World Champion 2024",
+  "also emily",
   "(outsider)",
 ]
 # highlight games between crc players
@@ -25,15 +26,15 @@ display_name = "Emily"
 hivegame = ["emily", "ParathaBread"]
 hivegame_current = "emily"
 
-# [players.hanna]
-# groups = ["emily"]
-# display_name = "Hanna"
-# hivegame = ["pocheshire"]
+[players.hanna]
+groups = ["also emily"]
+display_name = "Hanna"
+hivegame = ["pocheshire"]
 
-# [players.elvira]
-# groups = ["emily"]
-# display_name = "Elvira"
-# hivegame = ["decibelvira"]
+[players.elvira]
+groups = ["also emily"]
+display_name = "Elvira"
+hivegame = ["decibelvira"]
 
 ## --- csc
 
