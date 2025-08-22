@@ -9,7 +9,6 @@ group_order = [
   "bot",
   "World Champion 2024",
   "also emily",
-  "(outsider)",
 ]
 # highlight games between crc players
 highlight_games = ["crc", "csc"]

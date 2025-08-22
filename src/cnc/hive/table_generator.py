@@ -74,6 +74,9 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
     # Create the complete player order according to group stacks
     all_players = []
 
+    # Debug: Log the number of outsiders found
+    logger.debug(f"Found {len(outsiders)} outsiders")
+
     # Add known players
     for player in known_players.iter_rows(named=True):
         all_players.append(
@@ -164,6 +167,14 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
             grouped_players[top_group] = []
         grouped_players[top_group].append(player)
 
+    # Debug: Log the grouping results
+    logger.debug(
+        f"Grouped players: {[(group, len(players)) for group, players in grouped_players.items()]}"
+    )
+    logger.debug(
+        f"Outsiders in grouped_players: {len(grouped_players.get('(outsider)', []))}"
+    )
+
     # Sort each group by total games and reassemble the list
     all_players = []
     for group_name in config.settings.group_order + ["(outsider)"]:
@@ -172,6 +183,26 @@ def generate_game_counts_table(db: HiveDatabase, config: Config) -> str:
             group_players = grouped_players[group_name]
             group_players.sort(key=lambda p: p.get("total_games", 0), reverse=True)
             all_players.extend(group_players)
+            logger.debug(
+                f"Added {len(group_players)} players from group '{group_name}'"
+            )
+            logger.debug(f"Current all_players count: {len(all_players)}")
+
+    # Debug: Log the final player count
+    logger.debug(f"Final all_players count: {len(all_players)}")
+    logger.debug(
+        f"Outsiders in final list: {[p['display_name'] for p in all_players if p['groups'] == ['(outsider)']]}"
+    )
+
+    # Assert no duplicate players
+    player_ids = [player["id"] for player in all_players]
+    unique_ids = set(player_ids)
+    if len(player_ids) != len(unique_ids):
+        duplicates = [pid for pid in unique_ids if player_ids.count(pid) > 1]
+        raise AssertionError(
+            f"Duplicate players found in all_players list: {duplicates}"
+        )
+    logger.debug(f"Player list validation passed - no duplicates found")
 
     # Get detailed game statistics between all player pairs
     game_stats_query = """

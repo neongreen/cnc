@@ -20,6 +20,10 @@ description = "Build static files without starting the server"
 quiet = true
 run = "uv run cnc-build"
 
+[tasks."build:debug"]
+description = "Build static files with debug logging enabled"
+run = "LOG_LEVEL=DEBUG uv run cnc-build"
+
 [tasks.pyright]
 description = "Run type checks on Python"
 run = "uv run pyright --project ."
