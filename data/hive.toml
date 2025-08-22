@@ -7,7 +7,15 @@ group_order = [
   "via momoh",
   "(shared)",
   "bot",
-  "World Champion 2024",
+  "World Champion",
+  "WC 2024",
+  "WC 2023",
+  "WC 2022",
+  "WC 2021",
+  "WC 2020",
+  "WC 2019",
+  "WC 2018",
+  "WC 2017",
   "also emily",
 ]
 # highlight games between crc players
@@ -201,6 +209,16 @@ hivegame = ["pepeke"]
 ## --- others
 
 [players.suprisefish]
-groups = ["World Champion 2024"]
+groups = ["World Champion", "WC 2024"]
 display_name = "@suprisefish"
 hivegame = ["suprisefish"]
+
+[players.jewdoka]
+groups = ["World Champion", "WC 2023"]
+display_name = "@Jewdoka"
+hivegame = ["Jewdoka"]
+
+[players.Quodlibet]
+groups = ["World Champion", "WC 2021"]
+display_name = "@Quodlibet"
+hivegame = ["Quodlibet"]
