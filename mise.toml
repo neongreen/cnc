@@ -2,35 +2,53 @@ settings.python.uv_venv_auto = true
 
 [tools]
 uv = "latest"
-deno = "latest"
 watchexec = "latest"
 fd = "latest"
-
-[tasks."dev:flask"]
-description = "Start a dev server"
-run = "uv run flask --app cnc.main:app run --host=0.0.0.0 --port=5500"
 
 [tasks."dev"]
 run = """
   watchexec --restart --debounce 500ms --no-meta 'lsof -ti:5500 | xargs kill -9; mise build; mise dev:flask'
 """
 
+[tasks."dev:next"]
+description = "Start Next.js development server with HMR"
+run = "pnpm exec next dev --port 3000"
+
+[tasks."build:data"]
+description = "Build data used by the Next.js app"
+sources = [
+  "data/",
+  "public/",
+  "scripts/",
+  "src/",
+  "static/",
+  "pyproject.toml",
+  "uv.lock",
+]
+outputs = ["build/data/hive-data.json"]
+run = "uv run src/cnc/main.py"
+
 [tasks.build]
-description = "Build static files without starting the server"
+description = "Build the site"
 quiet = true
-run = "uv run cnc-build"
+depends = ["build:data"]
+run = "pnpm exec next build --turbopack"
 
-[tasks."build:debug"]
-description = "Build static files with debug logging enabled"
-run = "LOG_LEVEL=DEBUG uv run cnc-build"
+[tasks."serve"]
+description = "Serve statically built site"
+run = "uv run python -m http.server 5500 --directory build/"
 
-[tasks.pyright]
+[tasks.check]
+description = "Run all checks"
+depends = ["check:*"]
+
+[tasks."check:pyright"]
 description = "Run type checks on Python"
 run = "uv run pyright --project ."
 
-[tasks.checkjs]
-description = "Run type checks on JavaScript"
-run = "deno check --allow-import graph.js"
+[tasks."check:ts"]
+description = "Run type checks on TypeScript"
+run = "pnpm exec tsc --noEmit"
 
 [tasks.fetch-hive]
 description = "Fetch and cache Hive game data"

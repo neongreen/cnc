@@ -8,32 +8,36 @@
  * You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
  */
 
-import * as d3 from "https://esm.sh/d3"
+import * as d3 from "d3"
 
-/**
- * @typedef {object} Node
- * @property {string} id - The unique identifier for the node.
- * @property {string} name - The name of the node.
- * @property {boolean} [inactive] - Whether the player is inactive.
- * @property {number} x - The x-coordinate of the node.
- * @property {number} y - The y-coordinate of the node.
- * @property {number} fx - The fixed x-coordinate of the node.
- * @property {number} fy - The fixed y-coordinate of the node.
- */
+import "./graph.css"
 
-/**
- * @typedef {object} Edge
- * @property {Node} source - The source node object.
- * @property {Node} target - The target node object.
- * @property {number} [index] - The optional index, assigned by D3.
- */
+export type Node = {
+  id: string
+  name: string
+  inactive?: boolean
+  x: number
+  y: number
+  fx: number
+  fy: number
+}
 
-/**
- * @typedef {object} GraphData
- * @property {Array<Node>} nodes - An array of node objects.
- * @property {Array<Edge>} edges - An array of edge objects.
- * @property {Array<{source: string, target: string}>} [ties] - Optional array of tie edges.
- */
+type Edge = {
+  source: Node
+  target: Node
+  index?: number
+}
+
+interface XY {
+  x: number
+  y: number
+}
+
+export type GraphData = {
+  nodes: Node[]
+  edges: Edge[]
+  ties?: { source: string; target: string }[]
+}
 
 /**
  * Darkens a hex color by a given percentage.
@@ -41,7 +45,7 @@ import * as d3 from "https://esm.sh/d3"
  * @param {number} percent - The fraction to darken (0 to 1).
  * @returns {string} The darkened hex color.
  */
-function darkenColor(hex, percent) {
+function darkenColor(hex: string, percent: number): string {
   const f = parseInt(hex.slice(1), 16)
   let R = f >> 16,
     G = (f >> 8) & 0x00ff,
@@ -56,12 +60,13 @@ function darkenColor(hex, percent) {
 
 /**
  * Creates a unique arrowhead marker in the SVG defs.
- * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG selection.
- * @param {string} id - The marker ID.
- * @param {string} color - Fill color for the arrowhead.
- * @param {number} arrowSize - Size of the arrow marker.
  */
-function createArrowhead(svg, id, color, arrowSize) {
+function createArrowhead(
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  id: string,
+  color: string,
+  arrowSize: number
+): void {
   svg
     .append("defs")
     .append("marker")
@@ -80,12 +85,13 @@ function createArrowhead(svg, id, color, arrowSize) {
 
 /**
  * Renders node circles and labels on the SVG.
- * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG container.
- * @param {GraphData} graphData - The graph data object.
- * @param {Map<string, string>} nodeColors - Map of node ID to fill color.
- * @param {number} radius - Radius for each node circle.
  */
-function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
+function drawNodesAndLabels(
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  graphData: GraphData,
+  nodeColors: Map<string, string>,
+  radius: number
+): void {
   const node = svg
     .append("g")
     .selectAll("circle")
@@ -94,8 +100,10 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
     .append("circle")
     .attr("class", "node")
     .attr("r", radius)
-    .attr("fill", (d) => (d.inactive ? "#cccccc" : trust(nodeColors.get(d.id))))
-    .attr("stroke", (d) =>
+    .attr("fill", (d: Node) =>
+      d.inactive ? "#cccccc" : trust(nodeColors.get(d.id))
+    )
+    .attr("stroke", (d: Node) =>
       d.inactive
         ? darkenColor("#cccccc", 0.2)
         : darkenColor(trust(nodeColors.get(d.id)), 0.2)
@@ -108,33 +116,27 @@ function drawNodesAndLabels(svg, graphData, nodeColors, radius) {
     .enter()
     .append("text")
     .attr("class", "node-text")
-    .attr("fill", (d) => (d.inactive ? "#666666" : "#000000"))
-    .text((d) => d.name)
+    .attr("fill", (d: Node) => (d.inactive ? "#666666" : "#000000"))
+    .text((d: Node) => d.name)
 
-  node.attr("cx", (d) => d.x).attr("cy", (d) => d.y)
-  nodeText.attr("x", (d) => d.x).attr("y", (d) => d.y)
+  node.attr("cx", (d: Node) => d.x).attr("cy", (d: Node) => d.y)
+  nodeText.attr("x", (d: Node) => d.x).attr("y", (d: Node) => d.y)
 }
 
 /**
  * Draws directed edges with arrowheads and angled paths to avoid overlap.
- * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG container.
- * @param {GraphData} graphData - The graph data containing nodes and edges.
- * @param {Map<string, string>} nodeColors - Map of node ID to color.
- * @param {number} radius - Radius of node circles.
- * @param {number} arrowSize - Size of the arrow marker.
- * @param {number} arrowheadAdjustment - Additional offset for arrow placement.
  */
 function drawDirectedEdges(
-  svg,
-  graphData,
-  nodeColors,
-  radius,
-  arrowSize,
-  arrowheadAdjustment
-) {
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  graphData: GraphData,
+  nodeColors: Map<string, string>,
+  radius: number,
+  arrowSize: number,
+  arrowheadAdjustment: number
+): void {
   console.log("Creating edges...")
   // Create arrowheads for each edge
-  graphData.edges.forEach((edge) => {
+  graphData.edges.forEach((edge: Edge) => {
     const color = darkenColor(trust(nodeColors.get(edge.source.id)), 0.2)
     const id = `arrowhead-${edge.index}`
     console.log(
@@ -143,8 +145,8 @@ function drawDirectedEdges(
     createArrowhead(svg, id, color, arrowSize)
   })
 
-  /** @type {typeof d3.linkHorizontal<unknown, Node> } */
-  const d3_linkHorizontal = d3.linkHorizontal
+  const d3_linkHorizontal: () => d3.Link<any, { source: XY; target: XY }, XY> =
+    d3.linkHorizontal
 
   // Draw edge paths
   svg
@@ -154,58 +156,54 @@ function drawDirectedEdges(
     .enter()
     .append("path")
     .attr("class", "edge")
-    .attr("stroke", (d) => darkenColor(trust(nodeColors.get(d.source.id)), 0.2))
-    .attr("marker-end", (d) => `url(#arrowhead-${d.index})`)
-    .attr("d", (d) =>
-      d3_linkHorizontal()
-        .x((p) => p.x)
-        .y((p) => p.y)(
-        computeEdgeCoordinates(
-          d,
-          graphData.edges,
-          radius,
-          arrowSize,
-          arrowheadAdjustment
-        )
-      )
+    .attr("stroke", (d: Edge) =>
+      darkenColor(trust(nodeColors.get(d.source.id)), 0.2)
     )
+    .attr("marker-end", (d: Edge) => `url(#arrowhead-${d.index})`)
+    .attr("d", (d: Edge) => {
+      const coords: {
+        source: XY
+        target: XY
+      } = computeEdgeCoordinates(
+        d,
+        graphData.edges,
+        radius,
+        arrowSize,
+        arrowheadAdjustment
+      )
+      return d3_linkHorizontal()
+        .x((p: XY) => p.x)
+        .y((p: XY) => p.y)(coords)
+    })
 }
 
 /**
  * Compute offset source and target points for an edge to avoid overlap.
- * @param {Edge} edge - The edge with source and target nodes.
- * @param {Array<Edge>} edges - All edges in the graph.
- * @param {number} radius - Radius of the node circles.
- * @param {number} arrowSize - Size of the arrow marker.
- * @param {number} arrowheadAdjustment - Extra offset for arrowheads.
- * @returns {{source:{x:number,y:number}, target:{x:number,y:number}}}
  */
 function computeEdgeCoordinates(
-  edge,
-  edges,
-  radius,
-  arrowSize,
-  arrowheadAdjustment
-) {
+  edge: Edge,
+  edges: Edge[],
+  radius: number,
+  arrowSize: number,
+  arrowheadAdjustment: number
+): { source: XY; target: XY } {
   const sourceEdges = edges
-    .filter((e) => e.source === edge.source)
-    .sort((a, b) => a.target.y - b.target.y)
+    .filter((e: Edge) => e.source === edge.source)
+    .sort((a: Edge, b: Edge) => a.target.y - b.target.y)
   const targetEdges = edges
-    .filter((e) => e.target === edge.target)
-    .sort((a, b) => b.source.y - a.source.y)
-  /**
-   * @param {number} i
-   * @param {number} total
-   */
-  function angle(i, total) {
+    .filter((e: Edge) => e.target === edge.target)
+    .sort((a: Edge, b: Edge) => b.source.y - a.source.y)
+
+  function angle(i: number, total: number): number {
     return (((i - (total - 1) / 2) / total) * Math.PI) / 2
   }
+
   const sourceAngle = angle(
-    sourceEdges.findIndex((e) => e.target === edge.target),
+    sourceEdges.findIndex((e: Edge) => e.target === edge.target),
     sourceEdges.length
   )
   const targetAngle = angle(
-    targetEdges.findIndex((e) => e.source === edge.source),
+    targetEdges.findIndex((e: Edge) => e.source === edge.source),
     targetEdges.length
   )
   return {
@@ -226,18 +224,22 @@ function computeEdgeCoordinates(
 
 /**
  * Draws tie edges as dashed lines between nodes that tied.
- * @param {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} svg - The D3 SVG container.
- * @param {GraphData} graphData - The graph data with tie edge info.
- * @param {number} radius - Radius of node circles for offset calculations.
  */
-function drawTieEdges(svg, graphData, radius) {
+function drawTieEdges(
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  graphData: GraphData,
+  radius: number
+): void {
   console.log("Creating tie edges...")
   const tieLinks = (graphData.ties || [])
-    .map((t) => ({
-      source: graphData.nodes.find((n) => n.id === t.source),
-      target: graphData.nodes.find((n) => n.id === t.target),
+    .map((t: { source: string; target: string }) => ({
+      source: graphData.nodes.find((n: Node) => n.id === t.source),
+      target: graphData.nodes.find((n: Node) => n.id === t.target),
     }))
-    .filter((link) => link.source && link.target)
+    .filter(
+      (link: { source: Node | undefined; target: Node | undefined }) =>
+        link.source && link.target
+    )
   svg
     .append("g")
     .selectAll("path.tie")
@@ -250,13 +252,10 @@ function drawTieEdges(svg, graphData, radius) {
     .attr("stroke-width", 3)
     .attr("fill", "none")
     .attr("d", (d) => {
-      const s = trust(d.source),
-        t = trust(d.target)
-      const dx = t.x - s.x,
-        dy = t.y - s.y
+      const [s, t] = [trust(d.source), trust(d.target)]
+      const [dx, dy] = [t.x - s.x, t.y - s.y]
       const dist = Math.hypot(dx, dy)
-      const ux = dx / dist,
-        uy = dy / dist
+      const [ux, uy] = [dx / dist, dy / dist]
       const start = { x: s.x + radius * ux, y: s.y + radius * uy }
       const end = { x: t.x - radius * ux, y: t.y - radius * uy }
       return `M${start.x},${start.y}L${end.x},${end.y}`
@@ -265,28 +264,30 @@ function drawTieEdges(svg, graphData, radius) {
 
 /**
  * Computes node positions and assigns colors based on hierarchical levels.
- * @param {Array<Array<string>>} levels - Topological levels of node IDs.
- * @param {number} width - Available width for layout.
- * @param {number} height - Available height for layout.
- * @param {Array<string>} palette - Array of colors for levels.
- * @param {Set<string>} inactiveSet - Set of node IDs that are inactive.
- * @param {number} radius - Node radius in pixels.
- * @returns {{nodePositions: Map<string,{x:number,y:number}>, nodeColors: Map<string,string>}}
+ * @param levels - Topological levels of node IDs.
+ * @param width - Available width for layout.
+ * @param height - Available height for layout.
+ * @param palette - Array of colors for levels.
+ * @param inactiveSet - Set of node IDs that are inactive.
+ * @param radius - Node radius in pixels.
  */
 function computeNodeLayout(
-  levels,
-  width,
-  height,
-  palette,
-  inactiveSet,
-  radius
-) {
-  const nodePositions = new Map()
-  const nodeColors = new Map()
-  levels.forEach((level, levelIndex) => {
+  levels: string[][],
+  width: number,
+  height: number,
+  palette: string[],
+  inactiveSet: Set<string>,
+  radius: number
+): {
+  nodePositions: Map<string, XY>
+  nodeColors: Map<string, string>
+} {
+  const nodePositions = new Map<string, XY>()
+  const nodeColors = new Map<string, string>()
+  levels.forEach((level: string[], levelIndex: number) => {
     const x = (levelIndex + 0.5) * (width / levels.length)
-    const activeIds = level.filter((id) => !inactiveSet.has(id))
-    const inactiveIds = level.filter((id) => inactiveSet.has(id))
+    const activeIds = level.filter((id: string) => !inactiveSet.has(id))
+    const inactiveIds = level.filter((id: string) => inactiveSet.has(id))
 
     const activeCount = activeIds.length
     const inactiveCount = inactiveIds.length
@@ -295,7 +296,7 @@ function computeNodeLayout(
     let maxActiveY = 0
     if (activeCount > 0) {
       const stepActive = height / activeCount
-      activeIds.forEach((nodeName, nodeIndex) => {
+      activeIds.forEach((nodeName: string, nodeIndex: number) => {
         const y = (nodeIndex + 0.5) * stepActive
         nodePositions.set(nodeName, { x, y })
         nodeColors.set(nodeName, palette[levelIndex % palette.length])
@@ -307,7 +308,7 @@ function computeNodeLayout(
     if (inactiveCount > 0) {
       const yFloor = height - radius - 4
       const spacing = radius * 2 + 8
-      inactiveIds.forEach((nodeName, j) => {
+      inactiveIds.forEach((nodeName: string, j: number) => {
         const y = yFloor - j * spacing
         nodePositions.set(nodeName, { x, y })
         nodeColors.set(nodeName, palette[levelIndex % palette.length])
@@ -319,18 +320,22 @@ function computeNodeLayout(
 
 /**
  * Initialize and size the SVG container.
- * @param {string} selector - CSS selector for the SVG element.
- * @param {number} height - Desired SVG height.
- * @returns {{svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>, width: number, height: number}}
  */
-function initSVG(selector, height) {
-  /** @type {d3.Selection<SVGSVGElement, unknown, HTMLElement, undefined>} */
-  const svg = d3.select(selector)
+function initSVG(
+  svgNode: SVGSVGElement,
+  height: number
+): {
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>
+  width: number
+  height: number
+} {
+  const svg = d3.select(svgNode)
   const width = Math.max(
     trust(document.querySelector("table")).offsetWidth,
-    // deno-lint-ignore no-window
     window.innerWidth - 40
   )
+  // Match original behavior: set intrinsic SVG viewport via attributes.
+  // Keep CSS width for responsiveness, but avoid setting CSS height.
   svg
     .attr("width", width)
     .attr("height", height)
@@ -340,12 +345,15 @@ function initSVG(selector, height) {
 
 /**
  * Fix node coordinates to computed positions.
- * @param {Array<Node>} nodes - Graph nodes.
- * @param {Map<string, {x:number,y:number}>} nodePositions - Map of node IDs to positions.
+ * @param nodes - Graph nodes.
+ * @param nodePositions - Map of node IDs to positions.
  */
-function setFixedPositions(nodes, nodePositions) {
+function setFixedPositions(
+  nodes: Node[],
+  nodePositions: Map<string, XY>
+): void {
   console.log("Setting fixed positions for nodes...")
-  nodes.forEach((node) => {
+  nodes.forEach((node: Node) => {
     const pos = nodePositions.get(node.id)
     if (pos) {
       node.x = pos.x
@@ -361,15 +369,14 @@ function setFixedPositions(nodes, nodePositions) {
  * @param {Array<Node>} nodes - Graph nodes.
  * @param {Array<Edge>} edges - Graph edges.
  */
-function forceLinks(nodes, edges) {
-  /** @type {typeof d3.forceLink<Node, Edge>} */
+function forceLinks(nodes: Node[], edges: Edge[]): void {
   const d3_forceLink = d3.forceLink
 
   d3.forceSimulation(nodes)
     .force(
       "link",
       d3_forceLink(edges)
-        .id((d) => d.id)
+        .id((d: d3.SimulationNodeDatum) => (d as Node).id)
         .distance(100)
         .strength(0)
     )
@@ -382,9 +389,14 @@ function forceLinks(nodes, edges) {
  * @param {number} graphHeight - The height of the graph SVG.
  * @param {Array<Array<string>>} levels - An array of arrays, where each inner array represents a level of nodes in the graph.
  */
-export function drawGraph(graphData, graphHeight, levels) {
+export function drawGraph(
+  svgNode: SVGSVGElement,
+  graphData: GraphData,
+  graphHeight: number,
+  levels: string[][]
+): void {
   console.log("drawGraph called with:", { graphData, graphHeight, levels })
-  const { svg, width, height } = initSVG("#graph-svg", graphHeight)
+  const { svg, width, height } = initSVG(svgNode, graphHeight)
   console.log("SVG dimensions:", { width, height })
 
   const radius = 34 // Radius for nodes
@@ -405,7 +417,7 @@ export function drawGraph(graphData, graphHeight, levels) {
   ]
   console.log("Calculating node positions...")
   const inactiveSet = new Set(
-    graphData.nodes.filter((n) => n.inactive).map((n) => n.id)
+    graphData.nodes.filter((n: Node) => n.inactive).map((n: Node) => n.id)
   )
   const { nodePositions, nodeColors } = computeNodeLayout(
     levels,
@@ -441,7 +453,7 @@ export function drawGraph(graphData, graphHeight, levels) {
  * @param {T | undefined | null} value
  * @returns {T}
  */
-function trust(value) {
+function trust<T>(value: T | undefined | null): T {
   if (value === undefined || value === null) {
     throw new Error(`Expected a value, but got ${value}.`)
   }

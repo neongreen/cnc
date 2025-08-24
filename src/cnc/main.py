@@ -1,101 +1,62 @@
-# Copyright (c) 2025 Emily
-#
-# This work is licensed under the Creative Commons Zero v1.0 Universal License.
-#
-# To the extent possible under law, the author(s) have dedicated all copyright and related or neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
-#
-# You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-
-# How to run: see mise.toml
-# How to add dependencies: `uv add <dependency>`
-
+import sys
 from pathlib import Path
-from flask import Flask, send_from_directory
-import shutil
 
-import structlog
+# Add the src directory to the path so we can import the Python modules
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from cnc.utils import setup_logging
-from cnc.hive.html_generator import generate_hive_html
-from cnc.hive.html_generator_react import generate_hive_html_react
-from cnc.maturity import (
-    generate_maturity_html,
-    load_maturity_data,
-    load_maturity_players,
-)
-
-logger = structlog.get_logger()
-
-setup_logging()
-
-root = Path(__file__).parent.parent.parent
+from cnc.hive.table_generator_react import save_game_counts_json
+from cnc.hive.database import HiveDatabase
+from cnc.hive.config import get_config
+from cnc.hive.fetch_hive_games import GameCache
+from cnc.hive.games_data import create_games_list
 
 
-app = Flask(__name__, template_folder=root / "templates", static_folder=None)
+def generate_data_files():
+    """Generate all the data files needed for the site."""
+    root = Path(__file__).parent.parent.parent
+    data_dir = root / "data"
+    build_dir = root / "build" / "data"
+
+    print(root)
+
+    print("Generating data files...")
+
+    # Generate hive data
+    print("  - Generating hive data...")
+    config = get_config(data_dir / "hive.toml")
+    db = HiveDatabase()
+
+    cache_file = data_dir / "hive_games_cache.json"
+    if cache_file.exists():
+        all_games_raw = GameCache.model_validate_json(cache_file.read_text()).players
+    else:
+        all_games_raw = {}
+
+    raw_games = create_games_list(
+        [game for player_cache in all_games_raw.values() for game in player_cache.games]
+    )
+    db.load_data(config, raw_games)
+
+    # Save JSON data
+    hive_data_path = build_dir / "hive-data.json"
+    save_game_counts_json(db, config, hive_data_path)
+    print(f"    Saved hive data to {hive_data_path}")
 
 
-def build():
-    """Build the static site."""
+def main():
+    """Main build process."""
 
-    with app.app_context():
-        logger.info("Starting build process")
-        output_dir = root / "build"
-        output_dir.mkdir(exist_ok=True)
-        logger.debug(f"Output directory: {output_dir}")
+    try:
+        generate_data_files()
+        sys.exit(0)
 
-        # maturity matches
-        logger.info("Generating maturity HTML")
-        maturity = load_maturity_data(root / "data" / "maturity.csv")
-        maturity_inactive = load_maturity_players(
-            root / "data" / "maturity-players.toml"
-        )
+    except Exception as e:
+        print(f"❌ Build failed with error: {e}")
+        import traceback
 
-        maturity_output_path = output_dir / "index.html"
-        open(maturity_output_path, "w").write(
-            generate_maturity_html(maturity, inactive_players=maturity_inactive)
-        )
-        logger.info(f"Generated maturity HTML at {maturity_output_path}")
-
-        # hive (old version)
-        logger.info("Generating hive HTML (old version)")
-        hive_output_path = output_dir / "hive.html"
-        open(hive_output_path, "w").write(generate_hive_html())
-        logger.info(f"Generated hive HTML at {hive_output_path}")
-
-        # hive (React version)
-        logger.info("Generating hive HTML (React version)")
-        hive_react_output_path = output_dir / "hive2.html"
-        open(hive_react_output_path, "w").write(generate_hive_html_react())
-        logger.info(f"Generated hive React HTML at {hive_react_output_path}")
-
-        # everything else
-        logger.info("Copying static files")
-        shutil.copyfile("graph.js", output_dir / "graph.js")
-        shutil.rmtree(output_dir / "static", ignore_errors=True)
-        shutil.copytree("static", output_dir / "static")
-        logger.info("Build process completed successfully")
+        traceback.print_exc()
+        sys.exit(1)
 
 
-@app.route("/")
-def serve_html():
-    return send_from_directory(root / "build", "index.html")
-
-
-@app.route("/hive")
-def serve_hive():
-    return send_from_directory(root / "build", "hive.html")
-
-
-@app.route("/hive2")
-def serve_hive_react():
-    return send_from_directory(root / "build", "hive2.html")
-
-
-@app.route("/<path:filename>")
-def serve_static(filename):
-    return send_from_directory(root / "build", filename)
-
-
-def build_and_exit():
-    build()
-    exit(0)
+if __name__ == "__main__":
+    sys.exit(main())

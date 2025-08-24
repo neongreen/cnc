@@ -4,6 +4,7 @@ from pathlib import Path
 import structlog
 
 import polars as pl
+from polars import DataFrame
 import duckdb
 
 from cnc.hive.config import Config
@@ -186,6 +187,28 @@ def generate_game_counts_data(db: HiveDatabase, config: Config) -> dict:
     if len(player_ids) != len(unique_ids):
         raise ValueError("Duplicate player IDs found")
 
+        # Get detailed game statistics between all player pairs (same as old version)
+    game_stats_query = """
+        SELECT 
+            CASE 
+                WHEN known_white_player IS NOT NULL THEN known_white_player
+                ELSE hg_white_player
+            END AS player1,
+            CASE 
+                WHEN known_black_player IS NOT NULL THEN known_black_player
+                ELSE hg_black_player
+            END AS player2,
+            rated,
+            result,
+            COUNT(*) as total_games
+        FROM hg_games
+        WHERE (known_white_player IS NOT NULL OR known_black_player IS NOT NULL)
+        GROUP BY player1, player2, rated, result
+    """
+
+    game_stats: DataFrame = db.conn.execute(game_stats_query).pl()
+    logger.debug(f"Game stats: {game_stats}")
+
     # Generate game statistics for each player pair
     game_stats_data = []
     for i, row_player in enumerate(all_players):
@@ -193,43 +216,26 @@ def generate_game_counts_data(db: HiveDatabase, config: Config) -> dict:
             if i == j:  # Skip self-matches
                 continue
 
-            # Find stats for this player pair using SQL
+            # Find stats for this player pair from the game_stats DataFrame
             row_id = row_player["id"]
             col_id = col_player["id"]
 
-            # Query for games between these two players
-            result = db.conn.execute(
-                """
-                SELECT 
-                    COUNT(*) as total_games,
-                    SUM(CASE WHEN rated = true THEN 1 ELSE 0 END) as rated_games,
-                    SUM(CASE WHEN rated = false THEN 1 ELSE 0 END) as unrated_games
-                FROM hg_games 
-                WHERE (hg_white_player = ? AND hg_black_player = ?) 
-                   OR (hg_white_player = ? AND hg_black_player = ?)
-            """,
-                [row_id, col_id, col_id, row_id],
-            ).fetchone()
+            # Look for games between these two players from both perspectives
+            games_a_vs_b = game_stats.filter(
+                (game_stats["player1"] == row_id) & (game_stats["player2"] == col_id)
+            )
+            games_b_vs_a = game_stats.filter(
+                (game_stats["player1"] == col_id) & (game_stats["player2"] == row_id)
+            )
 
-            if result and result[0] > 0:
-                total_games = result[0]
-                rated_games = result[1] or 0
-                unrated_games = result[2] or 0
-
-                # Simplified stats - in reality you'd need to parse actual game results
-                rated_stats = {
-                    "wins": rated_games // 2,
-                    "losses": rated_games // 2,
-                    "draws": rated_games % 2,
-                    "total": rated_games,
-                }
-
-                unrated_stats = {
-                    "wins": unrated_games // 2,
-                    "losses": unrated_games // 2,
-                    "draws": unrated_games % 2,
-                    "total": unrated_games,
-                }
+            if len(games_a_vs_b) > 0 or len(games_b_vs_a) > 0:
+                # Calculate wins, losses, draws for this player matchup
+                rated_stats = calculate_player_matchup_stats(
+                    games_a_vs_b, games_b_vs_a, rated=True
+                )
+                unrated_stats = calculate_player_matchup_stats(
+                    games_a_vs_b, games_b_vs_a, rated=False
+                )
 
                 game_stats_data.append(
                     {
@@ -252,3 +258,60 @@ def generate_game_counts_data(db: HiveDatabase, config: Config) -> dict:
             "highlight_games": ["crc", "csc"],  # Groups to highlight
         },
     }
+
+
+def calculate_player_matchup_stats(
+    games_a_vs_b: DataFrame, games_b_vs_a: DataFrame, rated: bool
+) -> dict:
+    """Calculate wins, losses, and draws for a player in a specific matchup.
+
+    Args:
+        games_a_vs_b: Games where player_id was player1 (white)
+        games_b_vs_a: Games where player_id was player2 (black)
+        rated: Whether to look at rated (True) or unrated (False) games
+
+    Returns:
+        Dictionary with 'wins', 'losses', 'draws' counts
+    """
+    # Filter games by rated status
+    rated_games_a_vs_b = games_a_vs_b.filter(games_a_vs_b["rated"] == rated)
+    rated_games_b_vs_a = games_b_vs_a.filter(games_b_vs_a["rated"] == rated)
+
+    wins = 0
+    losses = 0
+    draws = 0
+
+    # When player_id was player1 (white), result 'white' means they won
+    for game in rated_games_a_vs_b.iter_rows(named=True):
+        if game["result"] == "white":
+            wins += game["total_games"]  # Player won
+        elif game["result"] == "black":
+            losses += game["total_games"]  # Player lost
+        elif game["result"] == "draw":
+            draws += game["total_games"]  # Player drew
+
+    # When player_id was player2 (black), result 'black' means they won
+    for game in rated_games_b_vs_a.iter_rows(named=True):
+        if game["result"] == "black":
+            wins += game["total_games"]  # Player won
+        elif game["result"] == "white":
+            losses += game["total_games"]  # Player lost
+        elif game["result"] == "draw":
+            draws += game["total_games"]  # Player drew
+
+    return {"wins": wins, "losses": losses, "draws": draws}
+
+
+def save_game_counts_json(db: HiveDatabase, config: Config, output_path: Path) -> None:
+    """Save game counts data as JSON file"""
+    data = generate_game_counts_data(db, config)
+
+    import json
+
+    # Ensure the output directory exists before writing the file
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.touch(exist_ok=True)
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+    logger.info(f"Saved game counts JSON to {output_path}")
