@@ -195,6 +195,11 @@ groups = ["crc", "via momoh"]
 display_name = "Star/SUS100"
 hivegame = ["SUS100"]
 
+[players.erix]
+groups = ["crc"]
+display_name = "Erix"
+hivegame = ["erixero"]
+
 ## --- bots
 
 [players.easybot]
