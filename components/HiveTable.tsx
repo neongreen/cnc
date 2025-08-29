@@ -1,8 +1,16 @@
 "use client"
 
-import "./HiveTable.css"
 import type { Config, GameStats, Player } from "../lib/hiveData"
 import { assignColors } from "../lib/colors"
+import Link from "next/link"
+import {
+  Table as UiTable,
+  TableHeader as UiTableHeader,
+  TableBody as UiTableBody,
+  TableRow as UiTableRow,
+  TableHead as UiTableHead,
+  TableCell as UiTableCell,
+} from "@/components/ui/table"
 
 // Component for rendering player information (name and group)
 function PlayerInfo({
@@ -14,12 +22,27 @@ function PlayerInfo({
 }) {
   return (
     <>
-      <div className="player-name">{player.display_name}</div>
+      <div className="font-bold mb-1 flex justify-center items-center">
+        <Link
+          href={`https://hivegame.com/@/${player.hivegame_nick.replace(
+            /^HG#/,
+            ""
+          )}`}
+        >
+          <span className="flex items-center gap-2">
+            <span
+              className="inline-block rounded-full bg-gray-300 dark:bg-gray-600 w-2 h-2"
+              aria-hidden="true"
+            />
+            <span className="cursor-pointer transition-colors hover:text-blue-700 focus-visible:text-blue-700 outline-none">
+              {player.display_name}
+            </span>
+          </span>
+        </Link>
+      </div>
       <div
-        className="player-group"
-        style={{
-          backgroundColor: groupColorMap[player.groups[0]],
-        }}
+        className="w-full text-[10px] text-white text-center"
+        style={{ backgroundColor: groupColorMap[player.groups[0]] }}
       >
         {player.groups[0]}
       </div>
@@ -27,8 +50,8 @@ function PlayerInfo({
   )
 }
 
-// Component for rendering table header
-function TableHeader({
+// Component for rendering table header (uses shadcn Table primitives)
+function HiveHeader({
   sortedPlayers,
   groupColorMap,
 }: {
@@ -36,17 +59,24 @@ function TableHeader({
   groupColorMap: Record<string, string>
 }) {
   return (
-    <thead>
-      <tr>
-        <th className="header-cell">Player</th>
-        <th className="header-cell">Total Games</th>
+    <UiTableHeader>
+      <UiTableRow>
+        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold">
+          Player
+        </UiTableHead>
+        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold">
+          Total Games
+        </UiTableHead>
         {sortedPlayers.map((player) => (
-          <th key={player.id} className="header-cell player-header">
+          <UiTableHead
+            key={player.id}
+            className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold min-w-20"
+          >
             <PlayerInfo player={player} groupColorMap={groupColorMap} />
-          </th>
+          </UiTableHead>
         ))}
-      </tr>
-    </thead>
+      </UiTableRow>
+    </UiTableHeader>
   )
 }
 
@@ -58,7 +88,8 @@ function GameStats({ stats }: { stats: GameStats | undefined }) {
     draws: number
   }) => {
     if (!stats || stats.wins + stats.losses + stats.draws === 0) return ""
-    return `${stats.wins}W ${stats.losses}L ${stats.draws}D`
+    if (stats.draws === 0) return `${stats.wins}-${stats.losses}`
+    return `${stats.wins}-${stats.losses}-${stats.draws}`
   }
 
   if (!stats) return null
@@ -76,11 +107,11 @@ function GameStats({ stats }: { stats: GameStats | undefined }) {
   return (
     <>
       {ratedStats && ratedTotal > 0 && <span>{formatStats(ratedStats)}</span>}
-      {unratedStats && unratedTotal > 0 && (
-        <>
-          <br />
-          <span className="unrated-text">{formatStats(unratedStats)}</span>
-        </>
+      <br />
+      {unratedStats && unratedTotal > 0 ? (
+        <span className="unrated-text">{formatStats(unratedStats)}</span>
+      ) : (
+        <span className="unrated-text">&nbsp;</span>
       )}
     </>
   )
@@ -105,30 +136,35 @@ function PlayerRow({
   ) => string
 }) {
   return (
-    <tr key={rowPlayer.id} className="player-row">
-      <td className="player-cell">
+    <UiTableRow key={rowPlayer.id}>
+      {/* Player name and groups */}
+      <UiTableCell className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold w-[120px] min-w-[120px] max-w-[120px]">
         <PlayerInfo player={rowPlayer} groupColorMap={groupColorMap} />
-      </td>
-      <td className="total-games">{rowPlayer.total_games}</td>
+      </UiTableCell>
+      {/* Total games */}
+      <UiTableCell className="bg-[#e9ecef] border border-[#dee2e6] p-2 text-center font-bold w-[80px] min-w-[80px] max-w-[80px]">
+        {rowPlayer.total_games}
+      </UiTableCell>
+      {/* Game stats (rest of the row) */}
       {sortedPlayers.map((colPlayer) => {
         const stats = getStats(rowPlayer, colPlayer)
         const cellClass = getCellClass(rowPlayer, colPlayer, stats)
 
         return (
-          <td
+          <UiTableCell
             key={`${rowPlayer.id}-${colPlayer.id}`}
-            className={`game-cell ${cellClass}`}
+            className={`border border-[#dee2e6] p-1 text-center min-w-[60px] h-10 align-middle ${cellClass}`}
           >
             <GameStats stats={stats} />
-          </td>
+          </UiTableCell>
         )
       })}
-    </tr>
+    </UiTableRow>
   )
 }
 
-// Component for rendering table body
-function TableBody({
+// Component for rendering table body (uses shadcn Table primitives)
+function HiveBody({
   sortedPlayers,
   groupColorMap,
   getStats,
@@ -144,7 +180,7 @@ function TableBody({
   ) => string
 }) {
   return (
-    <tbody>
+    <UiTableBody>
       {sortedPlayers.map((rowPlayer) => (
         <PlayerRow
           key={rowPlayer.id}
@@ -155,7 +191,7 @@ function TableBody({
           getCellClass={getCellClass}
         />
       ))}
-    </tbody>
+    </UiTableBody>
   )
 }
 
@@ -197,8 +233,8 @@ export default function HiveTable({
     colPlayer: Player,
     stats: GameStats | undefined
   ) => {
-    if (rowPlayer.id === colPlayer.id) return "self-match"
-    if (!stats) return "no-matches"
+    if (rowPlayer.id === colPlayer.id) return "bg-[#e9ecef] text-[#6c757d]"
+    if (!stats) return "bg-[#f8f9fa] text-[#6c757d]"
 
     const ratedTotal = stats.rated_stats
       ? stats.rated_stats.wins +
@@ -211,33 +247,31 @@ export default function HiveTable({
         stats.unrated_stats.draws
       : 0
 
-    if (ratedTotal > 0 || unratedTotal > 0) return "has-matches"
-    return "no-matches"
+    if (ratedTotal > 0 || unratedTotal > 0) return "bg-[#e8f5e8]"
+    return "bg-[#f8f9fa] text-[#6c757d]"
   }
 
   const getStats = (player1: Player, player2: Player) => {
     return game_stats.find(
-      (stat) =>
-        (stat.player1 === player1.id && stat.player2 === player2.id) ||
-        (stat.player1 === player2.id && stat.player2 === player1.id)
+      (stat) => stat.player1 === player1.id && stat.player2 === player2.id
     )
   }
 
   return (
-    <div className="hive-table">
-      <div className="table-container">
-        <table className="game-table">
-          <TableHeader
+    <div className="w-full min-w-[1200px] bg-white rounded-lg shadow">
+      <div className="min-w-[800px]">
+        <UiTable className="w-max text-[12px] border-collapse">
+          <HiveHeader
             sortedPlayers={sortedPlayers}
             groupColorMap={groupColorMap}
           />
-          <TableBody
+          <HiveBody
             sortedPlayers={sortedPlayers}
             groupColorMap={groupColorMap}
             getStats={getStats}
             getCellClass={getCellClass}
           />
-        </table>
+        </UiTable>
       </div>
     </div>
   )

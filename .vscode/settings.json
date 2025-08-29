@@ -1,0 +1,15 @@
+{
+  "deno.path": "/Users/artyom/.local/share/mise/shims/deno",
+  "go.goroot": "/Users/artyom/.local/share/mise/installs/go/1.25.0",
+  "ruff.path": [
+    "/Users/artyom/.local/share/mise/shims/ruff"
+  ],
+  "go.alternateTools": {
+    "go": "/Users/artyom/.local/share/mise/shims/go",
+    "dlv": "/Users/artyom/.local/share/mise/shims/dlv",
+    "gopls": "/Users/artyom/.local/share/mise/shims/gopls"
+  },
+  "ruff.interpreter": [
+    "/Users/artyom/.local/share/mise/shims/python"
+  ]
+}

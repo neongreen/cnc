@@ -12,9 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@445689ea25e0de0a23313031f5fe577c74ae45a1
-
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -25,14 +22,11 @@ jobs:
         with:
           version: 10
 
-      - name: Install Python dependencies
-        run: uv sync
-
       - name: Install pnpm dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build site
-        run: uv run src/cnc/main.py && pnpm exec next build --turbopack
+        run: pnpm exec next build --turbopack
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

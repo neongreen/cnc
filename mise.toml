@@ -5,33 +5,9 @@ uv = "latest"
 watchexec = "latest"
 fd = "latest"
 
-[tasks."dev"]
-run = """
-  watchexec --restart --debounce 500ms --no-meta 'lsof -ti:5500 | xargs kill -9; mise build; mise dev:flask'
-"""
-
-[tasks."dev:next"]
-description = "Start Next.js development server with HMR"
-run = "pnpm exec next dev --port 3000"
-
-[tasks."build:data"]
-description = "Build data used by the Next.js app"
-sources = [
-  "data/",
-  "public/",
-  "scripts/",
-  "src/",
-  "static/",
-  "pyproject.toml",
-  "uv.lock",
-]
-outputs = ["build/data/hive-data.json"]
-run = "uv run src/cnc/main.py"
-
 [tasks.build]
 description = "Build the site"
 quiet = true
-depends = ["build:data"]
 run = "pnpm exec next build --turbopack"
 
 [tasks."serve"]
@@ -66,17 +42,9 @@ run = "cat src/cnc/hive/schema.sql"
 description = "Validate SQL schema syntax"
 run = "scripts/validate_schema.py"
 
-[tasks."dev:status"]
-description = "Check what's running on the dev port"
-run = "lsof -i :5500 || echo 'Nothing running on port 5500'"
-
-[tasks."dev:logs"]
-description = "Show logs from the dev server process"
-run = "ps aux | grep 'dev_server.py' | grep -v grep || echo 'No dev server process found'"
-
-[tasks."dev:clean"]
-description = "Clean up all dev server processes and start fresh"
-run = "mise run dev:stop && sleep 1 && mise run dev"
+[tasks."dev"]
+description = "Start Next.js development server with HMR at http://localhost:3000/cnc/"
+run = "pnpm exec next dev --port 3000 --turbopack"
 
 [tasks."find-unused-code"]
 description = "Find unused methods/functions"
@@ -88,3 +56,7 @@ tools."go:github.com/google/addlicense" = "latest"
 run = """
   fd -t f . -X addlicense -c "Emily" -l cc0 -f license-header.txt {}
 """
+
+[tasks."shadcn"]
+description = "Call the shadcn CLI"
+run = "pnpm dlx shadcn@latest"

@@ -4,9 +4,6 @@ const palette = [
   "#feca57", // yellow
   "#ff6f69", // red
   "#b39ddb", // purple
-  "#ffd6e0", // pink
-  "#b2dfdb", // teal
-  "#f8b195", // peach
 ]
 
 export const gray = "#ddd"
