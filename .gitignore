@@ -5,3 +5,4 @@ __pycache__/
 .next/
 .ruff_cache/
 .venv/
+tsconfig.tsbuildinfo

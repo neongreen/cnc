@@ -30,6 +30,8 @@
     "enable": true
   },
   "include": [
+    "**/*.ts",
+    "**/*.tsx",
     "build/app/types/**/*.ts",
     ".next/types/**/*.ts"
   ],
