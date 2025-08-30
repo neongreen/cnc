@@ -30,7 +30,7 @@ fetch_outsiders = ["emily", "crc", "csc"]
 
 [players.emily]
 groups = ["emily"]
-display_name = "Emily"
+display_name = "🌸 Emily"
 hivegame = ["emily", "ParathaBread"]
 hivegame_current = "emily"
 
@@ -63,7 +63,7 @@ hivegame = ["Canis327O"]
 
 [players.vlad]
 groups = ["csc"]
-display_name = "Vladislav"
+display_name = "C# Vladislav"
 hivegame = ["Vladivostik54"]
 
 [players.sandra]

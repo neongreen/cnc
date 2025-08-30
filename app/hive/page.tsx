@@ -274,23 +274,7 @@ export default async function Hive() {
       </Head>
       <main>
         <div className="w-[100vw] m-0 bg-white rounded-none shadow-none overflow-visible">
-          <div className="bg-[linear-gradient(135deg,#667eea_0%,#764ba2_100%)] text-white p-[30px] text-center">
-            <h1 className="m-0 text-[2.5em] font-light">🐝 Hive</h1>
-          </div>
-
           <div className="p-5">
-            <div className="flex justify-center gap-4 mb-6">
-              <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded font-medium">
-                Player stats
-              </span>
-              <Link
-                href="/hive/recent"
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded font-medium transition-colors"
-              >
-                Recent games
-              </Link>
-            </div>
-
             <div
               id="hive-table-root"
               className="overflow-x-auto border-2 border-[#e9ecef] rounded-lg bg-[#f8f9fa] p-5 max-w-6xl mx-auto"

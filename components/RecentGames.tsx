@@ -63,37 +63,57 @@ function determinePlayerOrder(
   knownPlayers: Player[],
   highlightGroups: string[]
 ) {
-  const whiteHighlighted = isPlayerHighlighted(
-    whitePlayer,
-    whiteKnown,
-    knownPlayers,
-    highlightGroups
-  )
-  const blackHighlighted = isPlayerHighlighted(
-    blackPlayer,
-    blackKnown,
-    knownPlayers,
-    highlightGroups
-  )
-
-  // If neither is highlighted, we shouldn't show this game
-  if (!whiteHighlighted && !blackHighlighted) {
-    return null
+  const findPlayerMeta = (name: string, known: boolean) => {
+    const player: Player | undefined = known
+      ? knownPlayers.find((p) =>
+          p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name)
+        )
+      : undefined
+    const highlighted = !!(
+      player && player.groups.some((g) => highlightGroups.includes(g))
+    )
+    const displayName = player ? player.display_name || name : name
+    return { highlighted, displayName }
   }
 
-  // Player One should always be highlighted if possible
-  if (whiteHighlighted) {
-    return {
-      playerOne: { name: whitePlayer, known: whiteKnown },
-      playerTwo: { name: blackPlayer, known: blackKnown },
-      result: "white" as const,
-    }
-  } else {
-    return {
-      playerOne: { name: blackPlayer, known: blackKnown },
-      playerTwo: { name: whitePlayer, known: whiteKnown },
-      result: "black" as const,
-    }
+  const whiteMeta = findPlayerMeta(whitePlayer, whiteKnown)
+  const blackMeta = findPlayerMeta(blackPlayer, blackKnown)
+
+  const entries = [
+    {
+      name: whitePlayer,
+      known: whiteKnown,
+      displayName: whiteMeta.displayName,
+      highlighted: whiteMeta.highlighted,
+      originalColor: "white" as const,
+    },
+    {
+      name: blackPlayer,
+      known: blackKnown,
+      displayName: blackMeta.displayName,
+      highlighted: blackMeta.highlighted,
+      originalColor: "black" as const,
+    },
+  ]
+
+  entries.sort((a, b) => {
+    if (a.highlighted !== b.highlighted) return a.highlighted ? -1 : 1
+    return a.displayName.localeCompare(b.displayName, undefined, {
+      sensitivity: "base",
+    })
+  })
+
+  return {
+    playerOne: {
+      name: entries[0].name,
+      known: entries[0].known,
+      originalColor: entries[0].originalColor,
+    },
+    playerTwo: {
+      name: entries[1].name,
+      known: entries[1].known,
+      originalColor: entries[1].originalColor,
+    },
   }
 }
 
@@ -161,10 +181,15 @@ function formatDayHeader(dateString: string): string {
     if (isNaN(date.getTime())) {
       return dateString
     }
-    return date.toLocaleDateString("en-US", {
+    const now = new Date()
+    const opts: Intl.DateTimeFormatOptions = {
       month: "long",
       day: "numeric",
-    })
+    }
+    if (date.getFullYear() !== now.getFullYear()) {
+      opts.year = "numeric"
+    }
+    return date.toLocaleDateString("en-US", opts)
   } catch {
     return dateString
   }
@@ -172,7 +197,6 @@ function formatDayHeader(dateString: string): string {
 
 type ProcessedGame = RecentGame & {
   playerOrder: NonNullable<ReturnType<typeof determinePlayerOrder>>
-  adjustedResult: "white" | "black" | "draw"
 }
 
 function groupGamesByDay(games: ProcessedGame[]) {
@@ -249,24 +273,23 @@ export default function RecentGames({
       // Skip games where neither player is highlighted
       if (!playerOrder) return null
 
-      // Adjust the result based on player order
-      const adjustedResult: "white" | "black" | "draw" =
-        game.result === "white" && playerOrder.result === "black"
-          ? "black"
-          : game.result === "black" && playerOrder.result === "black"
-          ? "white"
-          : game.result
-
       return {
         ...game,
         playerOrder,
-        adjustedResult,
       } as ProcessedGame
     })
     .filter((game): game is ProcessedGame => game !== null)
 
   // Helper to render highlighted inline player tag
-  function InlinePlayerTag({ name, known }: { name: string; known: boolean }) {
+  function InlinePlayerTag({
+    name,
+    known,
+    isWinner = false,
+  }: {
+    name: string
+    known: boolean
+    isWinner?: boolean
+  }) {
     const player = known
       ? knownPlayers.find((p) =>
           p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name)
@@ -282,16 +305,18 @@ export default function RecentGames({
         href={`https://hivegame.com/@/${name}`}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn(
-          "text-gray-700 hover:text-blue-600",
-          shouldHighlight ? "" : ""
-        )}
+        className={cn("text-gray-700 hover:text-blue-600")}
         title={displayName}
       >
         <span
           className={cn(
-            "px-1.5 py-0.5 rounded",
-            shouldHighlight ? "bg-yellow-100" : ""
+            "px-1.5 py-0.5 rounded transition-colors duration-150",
+            shouldHighlight
+              ? "bg-yellow-100 hover:bg-yellow-200"
+              : "bg-gray-100 hover:bg-gray-200",
+            isWinner
+              ? "border-b-3 border-green-400"
+              : "border-b-3 border-transparent"
           )}
         >
           {displayName}
@@ -365,26 +390,29 @@ export default function RecentGames({
                             </span>
                           </TableCell>
                           <TableCell className="border border-[#dee2e6] p-3">
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <InlinePlayerTag
-                                  name={game.playerOrder.playerOne.name}
-                                  known={game.playerOrder.playerOne.known}
-                                />
-                                <span className="text-gray-400">vs</span>
-                                <InlinePlayerTag
-                                  name={game.playerOrder.playerTwo.name}
-                                  known={game.playerOrder.playerTwo.known}
-                                />
-                              </div>
-                              <div
-                                className={cn(
-                                  "text-sm",
-                                  getResultClass(game.adjustedResult)
-                                )}
-                              >
-                                {getResultText(game.adjustedResult)}
-                              </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <InlinePlayerTag
+                                name={game.playerOrder.playerOne.name}
+                                known={game.playerOrder.playerOne.known}
+                                isWinner={
+                                  game.result !== "draw" &&
+                                  game.playerOrder.playerOne.originalColor ===
+                                    (game.result as "white" | "black")
+                                }
+                              />
+                              <span className="text-gray-400">vs</span>
+                              <InlinePlayerTag
+                                name={game.playerOrder.playerTwo.name}
+                                known={game.playerOrder.playerTwo.known}
+                                isWinner={
+                                  game.result !== "draw" &&
+                                  game.playerOrder.playerTwo.originalColor ===
+                                    (game.result as "white" | "black")
+                                }
+                              />
+                              {game.result === "draw" && (
+                                <span className="text-gray-600 ml-2">½-½</span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="border border-[#dee2e6] p-3 text-center">
