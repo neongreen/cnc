@@ -175,6 +175,17 @@ function formatRelativeTime(dateString: string): string {
 }
 
 function formatDayHeader(dateString: string): string {
+  /*
+   * Hydration note:
+   * This Client Component formats dates using Date/Intl. Depending on the
+   * server's timezone/locale vs the browser's, the rendered text can differ
+   * slightly (e.g. day boundaries or whether the current year is shown), which
+   * can trigger a hydration mismatch warning. This is acceptable for this
+   * view; the client will re-render with the browser-local formatting.
+   * If this ever becomes problematic, options include snapshotting formatted
+   * strings on the server and passing them as props, or deferring formatting
+   * until after mount.
+   */
   try {
     const date = new Date(dateString)
     // Check if date is valid
@@ -214,6 +225,9 @@ function groupGamesByDay(games: ProcessedGame[]) {
   })
 
   // Add empty days for the last 7 days
+  // NOTE: Uses the current time. Server vs client timezone differences can
+  // cause the set of empty days (and their labels) to shift by one day around
+  // midnight, which may also produce a hydration warning. Accepted trade-off.
   const now = new Date()
   for (let i = 0; i < 7; i++) {
     const date = new Date(now)
