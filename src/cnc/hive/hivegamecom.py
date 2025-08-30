@@ -104,9 +104,13 @@ class HG_GameResponse(BaseModel):
     rated: bool
     conclusion: str  # e.g., "Board", "Timeout", "Resigned"
     created_at: datetime
+    updated_at: datetime
     speed: str  # e.g., "Blitz", "Rapid", "Correspondence", "Untimed"
     game_type: str  # e.g., "MLP" (Mosquito Ladybug Pillbug), "Base"
+    last_interaction: datetime | None
 
+    model_config = {"extra": "allow"}  # extra fields will be available in model_extra
+    
 
 def fetch_games_between_players(
     player1: HG_PlayerId,

@@ -15,6 +15,7 @@ type RawCacheGame = {
     | { Finished: "Draw" }
   rated: boolean
   created_at: string
+  last_interaction?: string
 }
 
 type CacheFile = {
@@ -231,19 +232,13 @@ export default async function RecentPage() {
         black_known: blackKnownId !== undefined,
         result: resultLabel(g),
         rated: g.rated,
-        timestamp: g.created_at,
+        timestamp: g.last_interaction || g.created_at,
       }
     })
     .filter((g): g is NonNullable<typeof g> => g !== null)
     .sort((a, b) => {
-      // Sort by created_at timestamp (newest first)
-      const aDate = new Date(
-        games.find((g) => g.game_id === a.game_id)?.created_at || ""
-      )
-      const bDate = new Date(
-        games.find((g) => g.game_id === b.game_id)?.created_at || ""
-      )
-      return bDate.getTime() - aDate.getTime()
+      // Sort by timestamp (newest first)
+      return Date.parse(b.timestamp) - Date.parse(a.timestamp)
     })
 
   return (
