@@ -1,0 +1,26 @@
+---
+description: Rules for writing React (frontend) code
+globs: *.tsx
+alwaysApply: false
+---
+
+When creating a new component, first consider if it's already in shadcn.
+If yes, use `pnpm dlx shadcn@latest add <component>` instead.
+
+---
+
+For tailwind, you must use `cn` from `@/lib/utils` to merge classes.
+Don't use template strings for classes.
+It won't work.
+
+Good:
+
+```tsx
+className={cn("p-1 m-2 text-accent-foreground", condition ? "bg-red-500" : "bg-blue-500")}
+```
+
+Bad:
+
+```tsx
+className={`p-1 m-2 text-accent-foreground ${condition ? "bg-red-500" : "bg-blue-500"}`}
+```

@@ -1,11 +1,10 @@
 import Head from "next/head"
-import HiveTable from "../../components/HiveTable"
+import RecentGames from "../../../components/RecentGames"
 import Link from "next/link"
-
 import fs from "fs"
 import path from "path"
 import { parse as parseToml } from "@ltd/j-toml"
-import type { Config, GameStats, Player } from "../../lib/hiveData"
+import type { Config, GameStats, Player } from "../../../lib/hiveData"
 
 type RawCacheGame = {
   game_id: string
@@ -112,7 +111,7 @@ function resultLabel(game: RawCacheGame): "white" | "black" | "draw" {
   return winner === "White" ? "white" : "black"
 }
 
-export default async function Hive() {
+export default async function RecentPage() {
   const root = process.cwd()
   const tomlPath = path.join(root, "data", "hive.toml")
   const cachePath = path.join(root, "data", "hive_games_cache.json")
@@ -201,106 +200,80 @@ export default async function Hive() {
     }
   }
 
-  // Precompute canonical game ids (map to known or HG#)
-  const canonGames = games
+  // Prepare recent games data
+  const recentGames = games
     .map((g) => {
       const whiteNick = g.white_player.username
       const blackNick = g.black_player.username
-      const whiteKnown = nickToKnownId.get(whiteNick)
-      const blackKnown = nickToKnownId.get(blackNick)
-      const whiteId = whiteKnown ?? tagHG(whiteNick)
-      const blackId = blackKnown ?? tagHG(blackNick)
+      const whiteKnownId = nickToKnownId.get(whiteNick)
+      const blackKnownId = nickToKnownId.get(blackNick)
+
+      // Check if players belong to highlighted groups
+      const whiteHighlighted = whiteKnownId
+        ? (playerIdToGroups.get(whiteKnownId) || []).some((group) =>
+            config.highlight_games.includes(group)
+          )
+        : false
+      const blackHighlighted = blackKnownId
+        ? (playerIdToGroups.get(blackKnownId) || []).some((group) =>
+            config.highlight_games.includes(group)
+          )
+        : false
+
+      // Only include games where at least one player is in a highlighted group
+      if (!whiteHighlighted && !blackHighlighted) return null
+
       return {
-        whiteId,
-        blackId,
-        rated: g.rated,
+        game_id: g.game_id,
+        white_player: whiteNick,
+        black_player: blackNick,
+        white_known: whiteKnownId !== undefined,
+        black_known: blackKnownId !== undefined,
         result: resultLabel(g),
+        rated: g.rated,
+        timestamp: g.created_at,
       }
     })
-    // Only keep games where at least one side is a known player (matches previous logic)
-    .filter(
-      (cg) =>
-        cg.whiteId.startsWith("player#") || cg.blackId.startsWith("player#")
-    )
-
-  // Aggregate pairwise stats
-  const game_stats: GameStats[] = []
-  const playerIds = players.map((p) => p.id)
-  for (let i = 0; i < playerIds.length; i++) {
-    for (let j = 0; j < playerIds.length; j++) {
-      if (i === j) continue
-      const rowId = playerIds[i]
-      const colId = playerIds[j]
-
-      const rated = { wins: 0, losses: 0, draws: 0 }
-      const unrated = { wins: 0, losses: 0, draws: 0 }
-
-      for (const g of canonGames) {
-        if (
-          (g.whiteId === rowId && g.blackId === colId) ||
-          (g.whiteId === colId && g.blackId === rowId)
-        ) {
-          const bucket = g.rated ? rated : unrated
-          if (g.result === "draw") bucket.draws += 1
-          else if (
-            (g.result === "white" && g.whiteId === rowId) ||
-            (g.result === "black" && g.blackId === rowId)
-          )
-            bucket.wins += 1
-          else bucket.losses += 1
-        }
-      }
-
-      if (
-        rated.wins + rated.losses + rated.draws > 0 ||
-        unrated.wins + unrated.losses + unrated.draws > 0
-      ) {
-        game_stats.push({
-          player1: rowId,
-          player2: colId,
-          rated_stats: rated,
-          unrated_stats: unrated,
-        })
-      }
-    }
-  }
+    .filter((g): g is NonNullable<typeof g> => g !== null)
+    .sort((a, b) => {
+      // Sort by created_at timestamp (newest first)
+      const aDate = new Date(
+        games.find((g) => g.game_id === a.game_id)?.created_at || ""
+      )
+      const bDate = new Date(
+        games.find((g) => g.game_id === b.game_id)?.created_at || ""
+      )
+      return bDate.getTime() - aDate.getTime()
+    })
 
   return (
     <>
       <Head>
-        <title>Hive games</title>
-        <meta name="description" content="Interactive Hive games table" />
+        <title>Recent Hive Games</title>
+        <meta
+          name="description"
+          content="Recent Hive games with highlighted players"
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <main>
         <div className="w-[100vw] m-0 bg-white rounded-none shadow-none overflow-visible">
           <div className="bg-[linear-gradient(135deg,#667eea_0%,#764ba2_100%)] text-white p-[30px] text-center">
-            <h1 className="m-0 text-[2.5em] font-light">🐝 Hive</h1>
+            <h1 className="m-0 text-[2.5em] font-light">
+              🐝{" "}
+              <Link href="/hive" className="text-white hover:text-gray-200">
+                Hive
+              </Link>{" "}
+              / Recent Games
+            </h1>
           </div>
 
           <div className="p-5">
-            <div className="flex justify-center gap-4 mb-6">
-              <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded font-medium">
-                Player stats
-              </span>
-              <Link
-                href="/hive/recent"
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded font-medium transition-colors"
-              >
-                Recent games
-              </Link>
-            </div>
-
-            <div
-              id="hive-table-root"
-              className="overflow-x-auto border-2 border-[#e9ecef] rounded-lg bg-[#f8f9fa] p-5 max-w-6xl mx-auto"
-            >
-              <HiveTable
-                config={config}
-                game_stats={game_stats}
-                players={players}
-              />
-            </div>
+            <RecentGames
+              games={recentGames}
+              knownPlayers={players.filter((p) => p.is_known)}
+              highlightGroups={config.highlight_games}
+            />
           </div>
         </div>
       </main>

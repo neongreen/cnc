@@ -11,6 +11,7 @@ import {
   TableHead as UiTableHead,
   TableCell as UiTableCell,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 // Component for rendering player information (name and group)
 function PlayerInfo({
@@ -153,7 +154,10 @@ function PlayerRow({
         return (
           <UiTableCell
             key={`${rowPlayer.id}-${colPlayer.id}`}
-            className={`border border-[#dee2e6] p-1 text-center min-w-[60px] h-10 align-middle ${cellClass}`}
+            className={cn(
+              "border border-[#dee2e6] p-1 text-center min-w-[60px] h-10 align-middle",
+              cellClass
+            )}
           >
             <GameStats stats={stats} />
           </UiTableCell>
@@ -163,7 +167,7 @@ function PlayerRow({
   )
 }
 
-// Component for rendering table body (uses shadcn Table primitives)
+// Component for rendering table body
 function HiveBody({
   sortedPlayers,
   groupColorMap,

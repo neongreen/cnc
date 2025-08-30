@@ -44,7 +44,7 @@ run = "scripts/validate_schema.py"
 
 [tasks."dev"]
 description = "Start Next.js development server with HMR at http://localhost:3000/cnc/"
-run = "pnpm exec next dev --port 3000 --turbopack"
+run = "pnpm exec next dev --port 3000" # not using turbopack because of https://github.com/tailwindlabs/tailwindcss/issues/15876
 
 [tasks."find-unused-code"]
 description = "Find unused methods/functions"
