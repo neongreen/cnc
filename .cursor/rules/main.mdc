@@ -6,5 +6,7 @@ alwaysApply: true
 
 Never create py files outside the src/ folder.
 
-Don't run `mise run build` every time you change something.
+Don't run `mise build` every time you change something.
 Typecheck is enough.
+
+After you think the task is done, run `mise check` to typecheck everything.

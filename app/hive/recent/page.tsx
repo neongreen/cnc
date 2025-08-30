@@ -5,6 +5,7 @@ import fs from "fs"
 import path from "path"
 import { parse as parseToml } from "@ltd/j-toml"
 import type { Config, GameStats, Player } from "../../../lib/hiveData"
+import { extractGameIdFromUrl } from "../../../lib/hiveData"
 
 type RawCacheGame = {
   game_id: string
@@ -124,6 +125,18 @@ export default async function RecentPage() {
     computeConfigAndKnownPlayers(tomlText)
   const games = loadAndDedupGames(cacheText)
 
+  // Parse game metadata from TOML
+  const parsedToml = parseToml(tomlText) as any
+  const gameMetadata: Array<{ url: string; event: string }> =
+    parsedToml.games || []
+
+  // Create a map from game ID to event (only /game/{id} urls)
+  const gameIdToEvent = new Map<string, string>()
+  for (const m of gameMetadata) {
+    const id = extractGameIdFromUrl(m.url)
+    if (id && m.event) gameIdToEvent.set(id, m.event)
+  }
+
   // Identify outsiders (only opponents of selected groups)
   const settingsAny: any = (parseToml(tomlText) as any)?.settings
   const fetchOutsiders: string[] = Array.isArray(settingsAny?.fetch_outsiders)
@@ -233,6 +246,7 @@ export default async function RecentPage() {
         result: resultLabel(g),
         rated: g.rated,
         timestamp: g.last_interaction || g.created_at,
+        event: gameIdToEvent.get(g.game_id) || null,
       }
     })
     .filter((g): g is NonNullable<typeof g> => g !== null)

@@ -26,6 +26,18 @@ run = "uv run pyright --project ."
 description = "Run type checks on TypeScript"
 run = "pnpm exec tsc --noEmit"
 
+[tasks.test]
+description = "Run unit tests (Vitest)"
+run = "pnpm exec vitest run"
+
+[tasks."test:watch"]
+description = "Run unit tests in watch mode"
+run = "pnpm exec vitest"
+
+[tasks."test:coverage"]
+description = "Run unit tests with coverage"
+run = "pnpm exec vitest run --coverage"
+
 [tasks.fetch-hive]
 description = "Fetch and cache Hive game data"
 run = "uv run src/cnc/hive/fetch_hive_games.py"

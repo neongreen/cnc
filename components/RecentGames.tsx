@@ -3,12 +3,12 @@
 import type { Player } from "../lib/hiveData"
 import Link from "next/link"
 import {
-  Table as UiTable,
-  TableHeader as UiTableHeader,
-  TableBody as UiTableBody,
-  TableRow as UiTableRow,
-  TableHead as UiTableHead,
-  TableCell as UiTableCell,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +21,7 @@ type RecentGame = {
   result: "white" | "black" | "draw"
   rated: boolean
   timestamp?: string
+  event: string | null
 }
 
 type RecentGamesProps = {
@@ -94,48 +95,6 @@ function determinePlayerOrder(
       result: "black" as const,
     }
   }
-}
-
-function PlayerCell({
-  playerName,
-  isKnown,
-  knownPlayers,
-  highlightGroups,
-}: PlayerNameProps) {
-  // Find player and determine display name
-  let displayName = playerName
-  let shouldHighlight = false
-
-  if (isKnown) {
-    const player = knownPlayers.find((p) =>
-      p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === playerName)
-    )
-    if (player) {
-      displayName = player.display_name || playerName
-      shouldHighlight = player.groups.some((group) =>
-        highlightGroups.includes(group)
-      )
-    }
-  }
-
-  return (
-    <UiTableCell
-      className={cn(
-        "border border-[#dee2e6] p-3",
-        shouldHighlight ? "bg-yellow-100" : ""
-      )}
-    >
-      <Link
-        href={`https://hivegame.com/@/${playerName}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hover:text-blue-600 text-gray-600 block truncate"
-        title={displayName}
-      >
-        {displayName}
-      </Link>
-    </UiTableCell>
-  )
 }
 
 function getResultClass(result: "white" | "black" | "draw"): string {
@@ -306,6 +265,41 @@ export default function RecentGames({
     })
     .filter((game): game is ProcessedGame => game !== null)
 
+  // Helper to render highlighted inline player tag
+  function InlinePlayerTag({ name, known }: { name: string; known: boolean }) {
+    const player = known
+      ? knownPlayers.find((p) =>
+          p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name)
+        )
+      : undefined
+    const shouldHighlight = !!(
+      player && player.groups.some((g) => highlightGroups.includes(g))
+    )
+    const displayName = player ? player.display_name || name : name
+
+    return (
+      <Link
+        href={`https://hivegame.com/@/${name}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "text-gray-700 hover:text-blue-600",
+          shouldHighlight ? "" : ""
+        )}
+        title={displayName}
+      >
+        <span
+          className={cn(
+            "px-1.5 py-0.5 rounded",
+            shouldHighlight ? "bg-yellow-100" : ""
+          )}
+        >
+          {displayName}
+        </span>
+      </Link>
+    )
+  }
+
   // Group games by day
   const groupedGames = groupGamesByDay(processedGames)
 
@@ -338,50 +332,62 @@ export default function RecentGames({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <UiTable className="min-w-[600px] table-fixed">
-                    <UiTableHeader>
-                      <UiTableRow>
-                        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold w-1/2">
-                          Player one
-                        </UiTableHead>
-                        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold w-1/2">
-                          Player two
-                        </UiTableHead>
-                        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-center font-bold w-20">
-                          Result
-                        </UiTableHead>
-                        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-center font-bold w-24">
+                  <Table className="min-w-[700px] table-fixed">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold w-1/4">
+                          Event
+                        </TableHead>
+                        <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold">
+                          Match
+                        </TableHead>
+                        <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-center font-bold w-24">
                           Rated
-                        </UiTableHead>
-                      </UiTableRow>
-                    </UiTableHeader>
-                    <UiTableBody>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {dayGames.map((game: ProcessedGame) => (
-                        <UiTableRow
+                        <TableRow
                           key={game.game_id}
                           className="hover:bg-gray-50"
                         >
-                          <PlayerCell
-                            playerName={game.playerOrder.playerOne.name}
-                            isKnown={game.playerOrder.playerOne.known}
-                            knownPlayers={knownPlayers}
-                            highlightGroups={highlightGroups}
-                          />
-                          <PlayerCell
-                            playerName={game.playerOrder.playerTwo.name}
-                            isKnown={game.playerOrder.playerTwo.known}
-                            knownPlayers={knownPlayers}
-                            highlightGroups={highlightGroups}
-                          />
-                          <UiTableCell
-                            className={cn(
-                              "border border-[#dee2e6] p-3 text-center",
-                              getResultClass(game.adjustedResult)
-                            )}
-                          >
-                            {getResultText(game.adjustedResult)}
-                          </UiTableCell>
-                          <UiTableCell className="border border-[#dee2e6] p-3 text-center">
+                          <TableCell className="border border-[#dee2e6] p-3">
+                            <span
+                              className={cn(
+                                "text-sm",
+                                game.event
+                                  ? "text-purple-700 font-medium bg-purple-50 px-2 py-1 rounded"
+                                  : "text-gray-400 italic"
+                              )}
+                            >
+                              {game.event || "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="border border-[#dee2e6] p-3">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <InlinePlayerTag
+                                  name={game.playerOrder.playerOne.name}
+                                  known={game.playerOrder.playerOne.known}
+                                />
+                                <span className="text-gray-400">vs</span>
+                                <InlinePlayerTag
+                                  name={game.playerOrder.playerTwo.name}
+                                  known={game.playerOrder.playerTwo.known}
+                                />
+                              </div>
+                              <div
+                                className={cn(
+                                  "text-sm",
+                                  getResultClass(game.adjustedResult)
+                                )}
+                              >
+                                {getResultText(game.adjustedResult)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="border border-[#dee2e6] p-3 text-center">
                             <span
                               className={cn(
                                 "px-2 py-1 rounded text-xs font-medium",
@@ -392,11 +398,11 @@ export default function RecentGames({
                             >
                               {game.rated ? "Rated" : "Unrated"}
                             </span>
-                          </UiTableCell>
-                        </UiTableRow>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </UiTableBody>
-                  </UiTable>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
