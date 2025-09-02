@@ -37,3 +37,7 @@ jobs:
           else
             echo 'No changes to commit'
           fi
+  publish:
+    needs: fetch
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
