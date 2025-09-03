@@ -185,6 +185,11 @@ groups = ["crc"]
 display_name = "myloRAHH"
 hivegame = ["myloRAHH"]
 
+[players.ral]
+groups = ["crc"]
+display_name = "Ral"
+hivegame = ["NotAHivePlayer"]
+
 [players.world]
 groups = ["crc", "(shared)"]
 display_name = "world"
