@@ -56,8 +56,13 @@ hivegame = ["marekbauer07"]
 
 [players.chico]
 groups = ["also emily"]
-display_name = "Emily's dad"
+display_name = "Ema's dad"
 hivegame = ["chico"]
+
+[players.luk]
+groups = ["also emily"]
+display_name = "Ema's mom"
+hivegame = ["luk"]
 
 ## --- csc
 
@@ -262,3 +267,7 @@ event = "Hive Weekly Tourny #1"
 [[games]]
 url = "https://hivegame.com/game/IWbs1d2OV8jF"
 event = "Hive Weekly Tourny #1"
+
+[[games]]
+url = "https://hivegame.com/game/wXaeZKBOKgb8"
+event = "Hive Weekly Tourny #2"
