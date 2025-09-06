@@ -65,7 +65,7 @@ function createArrowhead(
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   id: string,
   color: string,
-  arrowSize: number
+  arrowSize: number,
 ): void {
   svg
     .append("defs")
@@ -90,7 +90,7 @@ function drawNodesAndLabels(
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   graphData: GraphData,
   nodeColors: Map<string, string>,
-  radius: number
+  radius: number,
 ): void {
   const node = svg
     .append("g")
@@ -100,14 +100,11 @@ function drawNodesAndLabels(
     .append("circle")
     .attr("class", "node")
     .attr("r", radius)
-    .attr("fill", (d: Node) =>
-      d.inactive ? "#cccccc" : trust(nodeColors.get(d.id))
-    )
+    .attr("fill", (d: Node) => d.inactive ? "#cccccc" : trust(nodeColors.get(d.id)))
     .attr("stroke", (d: Node) =>
       d.inactive
         ? darkenColor("#cccccc", 0.2)
-        : darkenColor(trust(nodeColors.get(d.id)), 0.2)
-    )
+        : darkenColor(trust(nodeColors.get(d.id)), 0.2))
 
   const nodeText = svg
     .append("g")
@@ -132,7 +129,7 @@ function drawDirectedEdges(
   nodeColors: Map<string, string>,
   radius: number,
   arrowSize: number,
-  arrowheadAdjustment: number
+  arrowheadAdjustment: number,
 ): void {
   console.log("Creating edges...")
   // Create arrowheads for each edge
@@ -140,13 +137,12 @@ function drawDirectedEdges(
     const color = darkenColor(trust(nodeColors.get(edge.source.id)), 0.2)
     const id = `arrowhead-${edge.index}`
     console.log(
-      `Processing edge: Source=${edge.source.id}, Target=${edge.target.id}, Arrowhead ID=${id}`
+      `Processing edge: Source=${edge.source.id}, Target=${edge.target.id}, Arrowhead ID=${id}`,
     )
     createArrowhead(svg, id, color, arrowSize)
   })
 
-  const d3_linkHorizontal: () => d3.Link<any, { source: XY; target: XY }, XY> =
-    d3.linkHorizontal
+  const d3_linkHorizontal: () => d3.Link<any, { source: XY; target: XY }, XY> = d3.linkHorizontal
 
   // Draw edge paths
   svg
@@ -156,9 +152,7 @@ function drawDirectedEdges(
     .enter()
     .append("path")
     .attr("class", "edge")
-    .attr("stroke", (d: Edge) =>
-      darkenColor(trust(nodeColors.get(d.source.id)), 0.2)
-    )
+    .attr("stroke", (d: Edge) => darkenColor(trust(nodeColors.get(d.source.id)), 0.2))
     .attr("marker-end", (d: Edge) => `url(#arrowhead-${d.index})`)
     .attr("d", (d: Edge) => {
       const coords: {
@@ -169,7 +163,7 @@ function drawDirectedEdges(
         graphData.edges,
         radius,
         arrowSize,
-        arrowheadAdjustment
+        arrowheadAdjustment,
       )
       return d3_linkHorizontal()
         .x((p: XY) => p.x)
@@ -185,7 +179,7 @@ function computeEdgeCoordinates(
   edges: Edge[],
   radius: number,
   arrowSize: number,
-  arrowheadAdjustment: number
+  arrowheadAdjustment: number,
 ): { source: XY; target: XY } {
   const sourceEdges = edges
     .filter((e: Edge) => e.source === edge.source)
@@ -200,11 +194,11 @@ function computeEdgeCoordinates(
 
   const sourceAngle = angle(
     sourceEdges.findIndex((e: Edge) => e.target === edge.target),
-    sourceEdges.length
+    sourceEdges.length,
   )
   const targetAngle = angle(
     targetEdges.findIndex((e: Edge) => e.source === edge.source),
-    targetEdges.length
+    targetEdges.length,
   )
   return {
     source: {
@@ -212,12 +206,10 @@ function computeEdgeCoordinates(
       y: edge.source.y + radius * Math.sin(sourceAngle),
     },
     target: {
-      x:
-        edge.target.x -
-        (radius + arrowSize + arrowheadAdjustment) * Math.cos(targetAngle),
-      y:
-        edge.target.y -
-        (radius + arrowSize + arrowheadAdjustment) * Math.sin(targetAngle),
+      x: edge.target.x
+        - (radius + arrowSize + arrowheadAdjustment) * Math.cos(targetAngle),
+      y: edge.target.y
+        - (radius + arrowSize + arrowheadAdjustment) * Math.sin(targetAngle),
     },
   }
 }
@@ -228,7 +220,7 @@ function computeEdgeCoordinates(
 function drawTieEdges(
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   graphData: GraphData,
-  radius: number
+  radius: number,
 ): void {
   console.log("Creating tie edges...")
   const tieLinks = (graphData.ties || [])
@@ -237,8 +229,7 @@ function drawTieEdges(
       target: graphData.nodes.find((n: Node) => n.id === t.target),
     }))
     .filter(
-      (link: { source: Node | undefined; target: Node | undefined }) =>
-        link.source && link.target
+      (link: { source: Node | undefined; target: Node | undefined }) => link.source && link.target,
     )
   svg
     .append("g")
@@ -277,7 +268,7 @@ function computeNodeLayout(
   height: number,
   palette: string[],
   inactiveSet: Set<string>,
-  radius: number
+  radius: number,
 ): {
   nodePositions: Map<string, XY>
   nodeColors: Map<string, string>
@@ -323,7 +314,7 @@ function computeNodeLayout(
  */
 function initSVG(
   svgNode: SVGSVGElement,
-  height: number
+  height: number,
 ): {
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>
   width: number
@@ -332,7 +323,7 @@ function initSVG(
   const svg = d3.select(svgNode)
   const width = Math.max(
     trust(document.querySelector("table")).offsetWidth,
-    window.innerWidth - 40
+    window.innerWidth - 40,
   )
   // Match original behavior: set intrinsic SVG viewport via attributes.
   // Keep CSS width for responsiveness, but avoid setting CSS height.
@@ -350,7 +341,7 @@ function initSVG(
  */
 function setFixedPositions(
   nodes: Node[],
-  nodePositions: Map<string, XY>
+  nodePositions: Map<string, XY>,
 ): void {
   console.log("Setting fixed positions for nodes...")
   nodes.forEach((node: Node) => {
@@ -378,7 +369,7 @@ function forceLinks(nodes: Node[], edges: Edge[]): void {
       d3_forceLink(edges)
         .id((d: d3.SimulationNodeDatum) => (d as Node).id)
         .distance(100)
-        .strength(0)
+        .strength(0),
     )
     .stop()
 }
@@ -393,7 +384,7 @@ export function drawGraph(
   svgNode: SVGSVGElement,
   graphData: GraphData,
   graphHeight: number,
-  levels: string[][]
+  levels: string[][],
 ): void {
   console.log("drawGraph called with:", { graphData, graphHeight, levels })
   const { svg, width, height } = initSVG(svgNode, graphHeight)
@@ -417,7 +408,7 @@ export function drawGraph(
   ]
   console.log("Calculating node positions...")
   const inactiveSet = new Set(
-    graphData.nodes.filter((n: Node) => n.inactive).map((n: Node) => n.id)
+    graphData.nodes.filter((n: Node) => n.inactive).map((n: Node) => n.id),
   )
   const { nodePositions, nodeColors } = computeNodeLayout(
     levels,
@@ -425,7 +416,7 @@ export function drawGraph(
     height,
     colorPalette,
     inactiveSet,
-    radius
+    radius,
   )
 
   setFixedPositions(graphData.nodes, nodePositions)
@@ -438,7 +429,7 @@ export function drawGraph(
     nodeColors,
     radius,
     arrowSize,
-    arrowheadAdjustment
+    arrowheadAdjustment,
   )
 
   drawTieEdges(svg, graphData, radius)

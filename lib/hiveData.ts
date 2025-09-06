@@ -65,24 +65,24 @@ if (import.meta.vitest) {
   describe("extractGameIdFromUrl", () => {
     it("matches JSDoc examples", () => {
       expect(
-        extractGameIdFromUrl("https://hivegame.com/game/Ldb_urJrLZ1-")
+        extractGameIdFromUrl("https://hivegame.com/game/Ldb_urJrLZ1-"),
       ).toBe("Ldb_urJrLZ1-")
       expect(
-        extractGameIdFromUrl("https://example.com/game/whatever")
+        extractGameIdFromUrl("https://example.com/game/whatever"),
       ).toBeNull()
       expect(
-        extractGameIdFromUrl("https://hivegame.com/_MDDf492DNYt")
+        extractGameIdFromUrl("https://hivegame.com/_MDDf492DNYt"),
       ).toBeNull()
     })
 
     it("handles valid and invalid formats", () => {
       expect(
-        extractGameIdFromUrl("https://hivegame.com/game/6T9zVqpzgdiH")
+        extractGameIdFromUrl("https://hivegame.com/game/6T9zVqpzgdiH"),
       ).toBe("6T9zVqpzgdiH")
       expect(extractGameIdFromUrl("https://hivegame.com/ABC123")).toBeNull()
       expect(extractGameIdFromUrl("https://hivegame.com/game/")).toBeNull()
       expect(extractGameIdFromUrl("https://hivegame.com/game/simple")).toBe(
-        "simple"
+        "simple",
       )
       expect(extractGameIdFromUrl("")).toBeNull()
       expect(extractGameIdFromUrl("not-a-url")).toBeNull()

@@ -1,17 +1,17 @@
 "use client"
 
-import type { Config, GameStats, Player } from "../lib/hiveData"
-import { assignColors } from "../lib/colors"
-import Link from "next/link"
 import {
   Table as UiTable,
-  TableHeader as UiTableHeader,
   TableBody as UiTableBody,
-  TableRow as UiTableRow,
-  TableHead as UiTableHead,
   TableCell as UiTableCell,
+  TableHead as UiTableHead,
+  TableHeader as UiTableHeader,
+  TableRow as UiTableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { assignColors } from "../lib/colors"
+import type { Config, GameStats, Player } from "../lib/hiveData"
 
 // Component for rendering player information (name and group)
 function PlayerInfo({
@@ -25,10 +25,12 @@ function PlayerInfo({
     <>
       <div className="font-bold mb-1 flex justify-center items-center">
         <Link
-          href={`https://hivegame.com/@/${player.hivegame_nick.replace(
-            /^HG#/,
-            ""
-          )}`}
+          href={`https://hivegame.com/@/${
+            player.hivegame_nick.replace(
+              /^HG#/,
+              "",
+            )
+          }`}
         >
           <span className="flex items-center gap-2">
             <span
@@ -109,11 +111,9 @@ function GameStats({ stats }: { stats: GameStats | undefined }) {
     <>
       {ratedStats && ratedTotal > 0 && <span>{formatStats(ratedStats)}</span>}
       <br />
-      {unratedStats && unratedTotal > 0 ? (
-        <span className="unrated-text">{formatStats(unratedStats)}</span>
-      ) : (
-        <span className="unrated-text">&nbsp;</span>
-      )}
+      {unratedStats && unratedTotal > 0
+        ? <span className="unrated-text">{formatStats(unratedStats)}</span>
+        : <span className="unrated-text">&nbsp;</span>}
     </>
   )
 }
@@ -133,7 +133,7 @@ function PlayerRow({
   getCellClass: (
     rowPlayer: Player,
     colPlayer: Player,
-    stats: GameStats | undefined
+    stats: GameStats | undefined,
   ) => string
 }) {
   return (
@@ -156,7 +156,7 @@ function PlayerRow({
             key={`${rowPlayer.id}-${colPlayer.id}`}
             className={cn(
               "border border-[#dee2e6] p-1 text-center min-w-[60px] h-10 align-middle",
-              cellClass
+              cellClass,
             )}
           >
             <GameStats stats={stats} />
@@ -180,7 +180,7 @@ function HiveBody({
   getCellClass: (
     rowPlayer: Player,
     colPlayer: Player,
-    stats: GameStats | undefined
+    stats: GameStats | undefined,
   ) => string
 }) {
   return (
@@ -218,10 +218,8 @@ export default function HiveTable({
     const bGroup = b.groups[0] || "(no-group)"
 
     // Get group positions (outsiders go last)
-    const aGroupPos =
-      aGroup === "(outsider)" ? groupOrder.length : groupOrder.indexOf(aGroup)
-    const bGroupPos =
-      bGroup === "(outsider)" ? groupOrder.length : groupOrder.indexOf(bGroup)
+    const aGroupPos = aGroup === "(outsider)" ? groupOrder.length : groupOrder.indexOf(aGroup)
+    const bGroupPos = bGroup === "(outsider)" ? groupOrder.length : groupOrder.indexOf(bGroup)
 
     // If groups are different, sort by group position
     if (aGroupPos !== bGroupPos) {
@@ -235,20 +233,20 @@ export default function HiveTable({
   const getCellClass = (
     rowPlayer: Player,
     colPlayer: Player,
-    stats: GameStats | undefined
+    stats: GameStats | undefined,
   ) => {
     if (rowPlayer.id === colPlayer.id) return "bg-[#e9ecef] text-[#6c757d]"
     if (!stats) return "bg-[#f8f9fa] text-[#6c757d]"
 
     const ratedTotal = stats.rated_stats
-      ? stats.rated_stats.wins +
-        stats.rated_stats.losses +
-        stats.rated_stats.draws
+      ? stats.rated_stats.wins
+        + stats.rated_stats.losses
+        + stats.rated_stats.draws
       : 0
     const unratedTotal = stats.unrated_stats
-      ? stats.unrated_stats.wins +
-        stats.unrated_stats.losses +
-        stats.unrated_stats.draws
+      ? stats.unrated_stats.wins
+        + stats.unrated_stats.losses
+        + stats.unrated_stats.draws
       : 0
 
     if (ratedTotal > 0 || unratedTotal > 0) return "bg-[#e8f5e8]"
@@ -257,7 +255,7 @@ export default function HiveTable({
 
   const getStats = (player1: Player, player2: Player) => {
     return game_stats.find(
-      (stat) => stat.player1 === player1.id && stat.player2 === player2.id
+      (stat) => stat.player1 === player1.id && stat.player2 === player2.id,
     )
   }
 

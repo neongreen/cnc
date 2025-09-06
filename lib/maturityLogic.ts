@@ -1,5 +1,5 @@
-import * as Papa from "papaparse"
 import { parse } from "@ltd/j-toml"
+import * as Papa from "papaparse"
 
 export type MaturityPlayerStats = {
   name: string
@@ -85,10 +85,10 @@ export function getInactivePlayers(tomlText: string): Set<string> {
 
   for (const [name, meta] of Object.entries(data)) {
     if (
-      meta &&
-      typeof meta === "object" &&
-      "status" in meta &&
-      meta.status === "inactive"
+      meta
+      && typeof meta === "object"
+      && "status" in meta
+      && meta.status === "inactive"
     ) {
       inactive.add(name)
     }
@@ -99,7 +99,7 @@ export function getInactivePlayers(tomlText: string): Set<string> {
 
 export function calculateMaturityPlayerStats(
   matchDict: Record<string, MaturityMatchResult[]>,
-  players: string[]
+  players: string[],
 ): MaturityPlayerStats[] {
   const stats: Record<string, MaturityPlayerStats> = {}
   for (const player of players) {
@@ -137,7 +137,7 @@ export function calculateMaturityPlayerStats(
 
 // Graph utilities (ported from graph.py)
 export function pairingOutcomes(
-  matches: MaturityMatchResult[]
+  matches: MaturityMatchResult[],
 ): Record<string, string[][]> {
   const outcomes: Record<string, string[][]> = {}
 
@@ -149,12 +149,11 @@ export function pairingOutcomes(
       outcomes[keyStr] = []
     }
 
-    const outcome =
-      match.result === "p1"
-        ? [match.player1, match.player2]
-        : match.result === "p2"
-        ? [match.player2, match.player1]
-        : null // draw
+    const outcome = match.result === "p1"
+      ? [match.player1, match.player2]
+      : match.result === "p2"
+      ? [match.player2, match.player1]
+      : null // draw
 
     if (outcome) {
       outcomes[keyStr].push(outcome)
@@ -166,7 +165,7 @@ export function pairingOutcomes(
 
 export function topologicalSortParticipants(
   outcomes: Record<string, string[][]>,
-  participants: string[]
+  participants: string[],
 ): string[][] {
   // Build graph and in-degree map
   const graph: Record<string, string[]> = {}
@@ -226,7 +225,7 @@ export function topologicalSortParticipants(
 
 export function d3GraphData(
   players: string[],
-  results: MaturityMatchResult[]
+  results: MaturityMatchResult[],
 ): { nodes: any[]; edges: any[]; ties: any[] } {
   // Create nodes
   const nodes = players.map((player) => ({
@@ -282,7 +281,7 @@ export function formatDate(date: Date, locale = "en-US"): string {
 
 export function generateMaturityTable(
   matches: MaturityMatchResult[],
-  _inactivePlayers: Set<string> | null = null
+  _inactivePlayers: Set<string> | null = null,
 ): string {
   // Create a dictionary to store match data for quick lookup
   const matchDict: Record<string, MaturityMatchResult[]> = {}
@@ -303,7 +302,7 @@ export function generateMaturityTable(
 
   const sortedParticipantsStats = calculateMaturityPlayerStats(
     matchDict,
-    Array.from(participants)
+    Array.from(participants),
   )
   const participantsList = sortedParticipantsStats.map((p) => p.name)
 
@@ -312,9 +311,11 @@ export function generateMaturityTable(
         <thead>
             <tr>
                 <th></th>
-    ${sortedParticipantsStats
+    ${
+    sortedParticipantsStats
       .map((p) => `                <th>${p.name}</th>`)
-      .join("\n")}
+      .join("\n")
+  }
             </tr>
         </thead>
         <tbody>
@@ -398,17 +399,15 @@ export function generateMaturityData(csvText: string, tomlText: string): any {
 
   const sortedParticipantsStats = calculateMaturityPlayerStats(
     matchDict,
-    Array.from(participants)
+    Array.from(participants),
   )
   const participantsList = sortedParticipantsStats.map((p) => p.name)
 
   // Calculate completion statistics
   const numParticipants = participants.size
-  const totalPossiblePairings =
-    numParticipants > 1 ? (numParticipants * (numParticipants - 1)) / 2 : 0
+  const totalPossiblePairings = numParticipants > 1 ? (numParticipants * (numParticipants - 1)) / 2 : 0
   const matchesDone = matches.length
-  const completionRate =
-    totalPossiblePairings > 0 ? (matchesDone / totalPossiblePairings) * 100 : 0
+  const completionRate = totalPossiblePairings > 0 ? (matchesDone / totalPossiblePairings) * 100 : 0
 
   // Generate table content
   const tableContent = generateMaturityTable(matches, inactivePlayers)

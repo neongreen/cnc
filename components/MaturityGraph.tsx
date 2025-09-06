@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { type GraphData, drawGraph } from "../lib/graphDrawing"
+import { drawGraph, type GraphData } from "../lib/graphDrawing"
 
 export default function MaturityGraph({
   graphData,
@@ -24,7 +24,7 @@ export default function MaturityGraph({
         svg.innerHTML = ""
         const text = document.createElementNS(
           "http://www.w3.org/2000/svg",
-          "text"
+          "text",
         )
         text.setAttribute("x", "50%")
         text.setAttribute("y", "50%")

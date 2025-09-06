@@ -1,10 +1,10 @@
 import Head from "next/head"
-import HiveTable from "../../components/HiveTable"
 import Link from "next/link"
+import HiveTable from "../../components/HiveTable"
 
+import { parse as parseToml } from "@ltd/j-toml"
 import fs from "fs"
 import path from "path"
-import { parse as parseToml } from "@ltd/j-toml"
 import type { Config, GameStats, Player } from "../../lib/hiveData"
 
 type RawCacheGame = {
@@ -67,8 +67,7 @@ function computeConfigAndKnownPlayers(tomlText: string): {
     const display_name = (meta as any).display_name as string
     const groups = ((meta as any).groups as string[]) || []
     const hivegame = ((meta as any).hivegame as string[]) || []
-    const hivegame_current =
-      ((meta as any).hivegame_current as string) || hivegame[0]
+    const hivegame_current = ((meta as any).hivegame_current as string) || hivegame[0]
 
     const id = tagKnownPlayerId(playerId)
     const hivegame_nicks = hivegame.map((n) => tagHG(n))
@@ -120,8 +119,7 @@ export default async function Hive() {
   const tomlText = fs.readFileSync(tomlPath, "utf8")
   const cacheText = fs.readFileSync(cachePath, "utf8")
 
-  const { config, knownPlayers, nickToKnownId } =
-    computeConfigAndKnownPlayers(tomlText)
+  const { config, knownPlayers, nickToKnownId } = computeConfigAndKnownPlayers(tomlText)
   const games = loadAndDedupGames(cacheText)
 
   // Identify outsiders (only opponents of selected groups)
@@ -130,7 +128,7 @@ export default async function Hive() {
     ? settingsAny.fetch_outsiders
     : []
   const playerIdToGroups = new Map(
-    knownPlayers.map((p) => [p.id, p.groups as string[]])
+    knownPlayers.map((p) => [p.id, p.groups as string[]]),
   )
 
   const outsiders = new Set<string>()
@@ -192,7 +190,7 @@ export default async function Hive() {
       for (const tagged of p.hivegame_nicks) {
         const nick = tagged.replace(/^HG#/, "")
         const s = nickToGameIds.get(nick)
-        if (s) for (const gid of s) uniq.add(gid)
+        if (s) { for (const gid of s) uniq.add(gid) }
       }
       p.total_games = uniq.size
     } else {
@@ -219,8 +217,7 @@ export default async function Hive() {
     })
     // Only keep games where at least one side is a known player (matches previous logic)
     .filter(
-      (cg) =>
-        cg.whiteId.startsWith("player#") || cg.blackId.startsWith("player#")
+      (cg) => cg.whiteId.startsWith("player#") || cg.blackId.startsWith("player#"),
     )
 
   // Aggregate pairwise stats
@@ -237,23 +234,23 @@ export default async function Hive() {
 
       for (const g of canonGames) {
         if (
-          (g.whiteId === rowId && g.blackId === colId) ||
-          (g.whiteId === colId && g.blackId === rowId)
+          (g.whiteId === rowId && g.blackId === colId)
+          || (g.whiteId === colId && g.blackId === rowId)
         ) {
           const bucket = g.rated ? rated : unrated
           if (g.result === "draw") bucket.draws += 1
           else if (
-            (g.result === "white" && g.whiteId === rowId) ||
-            (g.result === "black" && g.blackId === rowId)
-          )
+            (g.result === "white" && g.whiteId === rowId)
+            || (g.result === "black" && g.blackId === rowId)
+          ) {
             bucket.wins += 1
-          else bucket.losses += 1
+          } else bucket.losses += 1
         }
       }
 
       if (
-        rated.wins + rated.losses + rated.draws > 0 ||
-        unrated.wins + unrated.losses + unrated.draws > 0
+        rated.wins + rated.losses + rated.draws > 0
+        || unrated.wins + unrated.losses + unrated.draws > 0
       ) {
         game_stats.push({
           player1: rowId,

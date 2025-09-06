@@ -1,9 +1,9 @@
-import Head from "next/head"
-import RecentGames from "../../../components/RecentGames"
-import Link from "next/link"
-import fs from "fs"
-import path from "path"
 import { parse as parseToml } from "@ltd/j-toml"
+import fs from "fs"
+import Head from "next/head"
+import Link from "next/link"
+import path from "path"
+import RecentGames from "../../../components/RecentGames"
 import type { Config, GameStats, Player } from "../../../lib/hiveData"
 import { extractGameIdFromUrl } from "../../../lib/hiveData"
 
@@ -68,8 +68,7 @@ function computeConfigAndKnownPlayers(tomlText: string): {
     const display_name = (meta as any).display_name as string
     const groups = ((meta as any).groups as string[]) || []
     const hivegame = ((meta as any).hivegame as string[]) || []
-    const hivegame_current =
-      ((meta as any).hivegame_current as string) || hivegame[0]
+    const hivegame_current = ((meta as any).hivegame_current as string) || hivegame[0]
 
     const id = tagKnownPlayerId(playerId)
     const hivegame_nicks = hivegame.map((n) => tagHG(n))
@@ -121,14 +120,12 @@ export default async function RecentPage() {
   const tomlText = fs.readFileSync(tomlPath, "utf8")
   const cacheText = fs.readFileSync(cachePath, "utf8")
 
-  const { config, knownPlayers, nickToKnownId } =
-    computeConfigAndKnownPlayers(tomlText)
+  const { config, knownPlayers, nickToKnownId } = computeConfigAndKnownPlayers(tomlText)
   const games = loadAndDedupGames(cacheText)
 
   // Parse game metadata from TOML
   const parsedToml = parseToml(tomlText) as any
-  const gameMetadata: Array<{ url: string; event: string }> =
-    parsedToml.games || []
+  const gameMetadata: Array<{ url: string; event: string }> = parsedToml.games || []
 
   // Create a map from game ID to event (only /game/{id} urls)
   const gameIdToEvent = new Map<string, string>()
@@ -143,7 +140,7 @@ export default async function RecentPage() {
     ? settingsAny.fetch_outsiders
     : []
   const playerIdToGroups = new Map(
-    knownPlayers.map((p) => [p.id, p.groups as string[]])
+    knownPlayers.map((p) => [p.id, p.groups as string[]]),
   )
 
   const outsiders = new Set<string>()
@@ -205,7 +202,7 @@ export default async function RecentPage() {
       for (const tagged of p.hivegame_nicks) {
         const nick = tagged.replace(/^HG#/, "")
         const s = nickToGameIds.get(nick)
-        if (s) for (const gid of s) uniq.add(gid)
+        if (s) { for (const gid of s) uniq.add(gid) }
       }
       p.total_games = uniq.size
     } else {
@@ -224,14 +221,10 @@ export default async function RecentPage() {
 
       // Check if players belong to highlighted groups
       const whiteHighlighted = whiteKnownId
-        ? (playerIdToGroups.get(whiteKnownId) || []).some((group) =>
-            config.highlight_games.includes(group)
-          )
+        ? (playerIdToGroups.get(whiteKnownId) || []).some((group) => config.highlight_games.includes(group))
         : false
       const blackHighlighted = blackKnownId
-        ? (playerIdToGroups.get(blackKnownId) || []).some((group) =>
-            config.highlight_games.includes(group)
-          )
+        ? (playerIdToGroups.get(blackKnownId) || []).some((group) => config.highlight_games.includes(group))
         : false
 
       // Only include games where at least one player is in a highlighted group

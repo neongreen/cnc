@@ -1,16 +1,9 @@
 "use client"
 
-import type { Player } from "../lib/hiveData"
-import Link from "next/link"
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
+import type { Player } from "../lib/hiveData"
 
 type RecentGame = {
   game_id: string
@@ -42,13 +35,11 @@ function isPlayerHighlighted(
   playerName: string,
   isKnown: boolean,
   knownPlayers: Player[],
-  highlightGroups: string[]
+  highlightGroups: string[],
 ): boolean {
   if (!isKnown) return false
 
-  const player = knownPlayers.find((p) =>
-    p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === playerName)
-  )
+  const player = knownPlayers.find((p) => p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === playerName))
 
   if (!player) return false
 
@@ -61,13 +52,11 @@ function determinePlayerOrder(
   whiteKnown: boolean,
   blackKnown: boolean,
   knownPlayers: Player[],
-  highlightGroups: string[]
+  highlightGroups: string[],
 ) {
   const findPlayerMeta = (name: string, known: boolean) => {
     const player: Player | undefined = known
-      ? knownPlayers.find((p) =>
-          p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name)
-        )
+      ? knownPlayers.find((p) => p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name))
       : undefined
     const highlighted = !!(
       player && player.groups.some((g) => highlightGroups.includes(g))
@@ -153,12 +142,15 @@ function formatRelativeTime(dateString: string): string {
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
 
     if (diffInMinutes < 1) return "just now"
-    if (diffInMinutes < 60)
+    if (diffInMinutes < 60) {
       return `${diffInMinutes} minute${diffInMinutes === 1 ? "" : "s"} ago`
-    if (diffInHours < 24)
+    }
+    if (diffInHours < 24) {
       return `${diffInHours} hour${diffInHours === 1 ? "" : "s"} ago`
-    if (diffInDays < 7)
+    }
+    if (diffInDays < 7) {
       return `${diffInDays} day${diffInDays === 1 ? "" : "s"} ago`
+    }
     if (diffInDays < 30) {
       const weeks = Math.floor(diffInDays / 7)
       return `${weeks} week${weeks === 1 ? "" : "s"} ago`
@@ -241,7 +233,7 @@ function groupGamesByDay(games: ProcessedGame[]) {
 
   // Sort groups by date (newest first)
   const sortedGroups = Object.entries(groups).sort(
-    ([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime()
+    ([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime(),
   )
 
   return sortedGroups
@@ -281,7 +273,7 @@ export default function RecentGames({
         game.white_known,
         game.black_known,
         knownPlayers,
-        highlightGroups
+        highlightGroups,
       )
 
       // Skip games where neither player is highlighted
@@ -305,9 +297,7 @@ export default function RecentGames({
     isWinner?: boolean
   }) {
     const player = known
-      ? knownPlayers.find((p) =>
-          p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name)
-        )
+      ? knownPlayers.find((p) => p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name))
       : undefined
     const shouldHighlight = !!(
       player && player.groups.some((g) => highlightGroups.includes(g))
@@ -330,7 +320,7 @@ export default function RecentGames({
               : "bg-gray-100 hover:bg-gray-200",
             isWinner
               ? "border-b-3 border-green-400"
-              : "border-b-3 border-transparent"
+              : "border-b-3 border-transparent",
           )}
         >
           {displayName}
@@ -346,10 +336,9 @@ export default function RecentGames({
     <div className="w-full bg-white rounded-lg">
       <div className="space-y-6 max-w-5xl mx-auto pt-10">
         {groupedGames.map(([dateKey, dayGames]) => {
-          const dayHeader =
-            dayGames.length > 0
-              ? formatDayHeader(dayGames[0].timestamp || dateKey)
-              : formatDayHeader(dateKey)
+          const dayHeader = dayGames.length > 0
+            ? formatDayHeader(dayGames[0].timestamp || dateKey)
+            : formatDayHeader(dateKey)
           return (
             <div key={dateKey} className="border-gray-200 pb-6">
               <div className="flex items-center gap-3 mb-4">
@@ -359,94 +348,88 @@ export default function RecentGames({
                 <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
                   {dayGames.length === 0
                     ? "No games"
-                    : `${dayGames.length} game${
-                        dayGames.length === 1 ? "" : "s"
-                      }`}
+                    : `${dayGames.length} game${dayGames.length === 1 ? "" : "s"}`}
                 </span>
               </div>
 
-              {dayGames.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm">No games played on this day</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[700px] table-fixed">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold w-1/4">
-                          Event
-                        </TableHead>
-                        <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold">
-                          Match
-                        </TableHead>
-                        <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-center font-bold w-24">
-                          Rated
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dayGames.map((game: ProcessedGame) => (
-                        <TableRow
-                          key={game.game_id}
-                          className="hover:bg-gray-50"
-                        >
-                          <TableCell className="border border-[#dee2e6] p-3">
-                            <span
-                              className={cn(
-                                "text-sm",
-                                game.event
-                                  ? "text-purple-700 font-medium bg-purple-50 px-2 py-1 rounded"
-                                  : "text-gray-400 italic"
-                              )}
-                            >
-                              {game.event || "—"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="border border-[#dee2e6] p-3">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <InlinePlayerTag
-                                name={game.playerOrder.playerOne.name}
-                                known={game.playerOrder.playerOne.known}
-                                isWinner={
-                                  game.result !== "draw" &&
-                                  game.playerOrder.playerOne.originalColor ===
-                                    (game.result as "white" | "black")
-                                }
-                              />
-                              <span className="text-gray-400">vs</span>
-                              <InlinePlayerTag
-                                name={game.playerOrder.playerTwo.name}
-                                known={game.playerOrder.playerTwo.known}
-                                isWinner={
-                                  game.result !== "draw" &&
-                                  game.playerOrder.playerTwo.originalColor ===
-                                    (game.result as "white" | "black")
-                                }
-                              />
-                              {game.result === "draw" && (
-                                <span className="text-gray-600 ml-2">½-½</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="border border-[#dee2e6] p-3 text-center">
-                            <span
-                              className={cn(
-                                "px-2 py-1 rounded text-xs font-medium",
-                                game.rated
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-100 text-gray-800"
-                              )}
-                            >
-                              {game.rated ? "Rated" : "Unrated"}
-                            </span>
-                          </TableCell>
+              {dayGames.length === 0
+                ? (
+                  <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm">No games played on this day</p>
+                  </div>
+                )
+                : (
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[700px] table-fixed">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold w-1/4">
+                            Event
+                          </TableHead>
+                          <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold">
+                            Match
+                          </TableHead>
+                          <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-center font-bold w-24">
+                            Rated
+                          </TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+                      </TableHeader>
+                      <TableBody>
+                        {dayGames.map((game: ProcessedGame) => (
+                          <TableRow
+                            key={game.game_id}
+                            className="hover:bg-gray-50"
+                          >
+                            <TableCell className="border border-[#dee2e6] p-3">
+                              <span
+                                className={cn(
+                                  "text-sm",
+                                  game.event
+                                    ? "text-purple-700 font-medium bg-purple-50 px-2 py-1 rounded"
+                                    : "text-gray-400 italic",
+                                )}
+                              >
+                                {game.event || "—"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="border border-[#dee2e6] p-3">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <InlinePlayerTag
+                                  name={game.playerOrder.playerOne.name}
+                                  known={game.playerOrder.playerOne.known}
+                                  isWinner={game.result !== "draw"
+                                    && game.playerOrder.playerOne.originalColor
+                                      === (game.result as "white" | "black")}
+                                />
+                                <span className="text-gray-400">vs</span>
+                                <InlinePlayerTag
+                                  name={game.playerOrder.playerTwo.name}
+                                  known={game.playerOrder.playerTwo.known}
+                                  isWinner={game.result !== "draw"
+                                    && game.playerOrder.playerTwo.originalColor
+                                      === (game.result as "white" | "black")}
+                                />
+                                {game.result === "draw" && <span className="text-gray-600 ml-2">½-½</span>}
+                              </div>
+                            </TableCell>
+                            <TableCell className="border border-[#dee2e6] p-3 text-center">
+                              <span
+                                className={cn(
+                                  "px-2 py-1 rounded text-xs font-medium",
+                                  game.rated
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800",
+                                )}
+                              >
+                                {game.rated ? "Rated" : "Unrated"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
             </div>
           )
         })}

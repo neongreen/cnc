@@ -1,7 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 export default function Tabs() {
@@ -17,7 +17,7 @@ export default function Tabs() {
           "px-4 py-2 rounded font-medium transition-colors",
           isMain
             ? "bg-blue-100 text-blue-800"
-            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-700",
         )}
       >
         Player stats
@@ -28,7 +28,7 @@ export default function Tabs() {
           "px-4 py-2 rounded font-medium transition-colors",
           isRecent
             ? "bg-blue-100 text-blue-800"
-            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-700",
         )}
       >
         Recent games

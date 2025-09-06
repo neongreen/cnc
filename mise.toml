@@ -4,6 +4,7 @@ settings.python.uv_venv_auto = true
 uv = "latest"
 watchexec = "latest"
 fd = "latest"
+dprint = "latest"
 
 [tasks.build]
 description = "Build the site"
@@ -25,6 +26,10 @@ run = "uv run pyright --project ."
 [tasks."check:ts"]
 description = "Run type checks on TypeScript"
 run = "pnpm exec tsc --noEmit"
+
+[tasks."fmt"]
+description = "Format code"
+run = "dprint fmt"
 
 [tasks.test]
 description = "Run unit tests (Vitest)"
