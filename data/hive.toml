@@ -57,7 +57,7 @@ hivegame = ["marekbauer07"]
 [players.chico]
 groups = ["also emily"]
 display_name = "Ema's dad"
-hivegame = ["chico"]
+hivegame = ["Chico"]
 
 [players.luk]
 groups = ["also emily"]

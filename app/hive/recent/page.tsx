@@ -75,7 +75,7 @@ function computeConfigAndKnownPlayers(tomlText: string): {
     const hivegame_nick = tagHG(hivegame_current)
 
     for (const nick of hivegame) {
-      nickToKnownId.set(nick, id)
+      nickToKnownId.set(nick.toLowerCase(), id)
     }
 
     knownPlayers.push({
@@ -147,8 +147,8 @@ export default async function RecentPage() {
   for (const g of games) {
     const white = g.white_player.username
     const black = g.black_player.username
-    const whiteKnown = nickToKnownId.get(white)
-    const blackKnown = nickToKnownId.get(black)
+    const whiteKnown = nickToKnownId.get(white.toLowerCase())
+    const blackKnown = nickToKnownId.get(black.toLowerCase())
 
     if (whiteKnown && !blackKnown) {
       const topGroup = (playerIdToGroups.get(whiteKnown) || [])[0]
@@ -216,8 +216,8 @@ export default async function RecentPage() {
     .map((g) => {
       const whiteNick = g.white_player.username
       const blackNick = g.black_player.username
-      const whiteKnownId = nickToKnownId.get(whiteNick)
-      const blackKnownId = nickToKnownId.get(blackNick)
+      const whiteKnownId = nickToKnownId.get(whiteNick.toLowerCase())
+      const blackKnownId = nickToKnownId.get(blackNick.toLowerCase())
 
       // Check if players belong to highlighted groups
       const whiteHighlighted = whiteKnownId

@@ -39,7 +39,11 @@ function isPlayerHighlighted(
 ): boolean {
   if (!isKnown) return false
 
-  const player = knownPlayers.find((p) => p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === playerName))
+  const player = knownPlayers.find((p) =>
+    p.hivegame_nicks.some(
+      (nick) => nick.replace(/^HG#/, "").toLowerCase() === playerName.toLowerCase(),
+    )
+  )
 
   if (!player) return false
 
@@ -56,7 +60,11 @@ function determinePlayerOrder(
 ) {
   const findPlayerMeta = (name: string, known: boolean) => {
     const player: Player | undefined = known
-      ? knownPlayers.find((p) => p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name))
+      ? knownPlayers.find((p) =>
+        p.hivegame_nicks.some(
+          (nick) => nick.replace(/^HG#/, "").toLowerCase() === name.toLowerCase(),
+        )
+      )
       : undefined
     const highlighted = !!(
       player && player.groups.some((g) => highlightGroups.includes(g))
@@ -297,7 +305,11 @@ export default function RecentGames({
     isWinner?: boolean
   }) {
     const player = known
-      ? knownPlayers.find((p) => p.hivegame_nicks.some((nick) => nick.replace(/^HG#/, "") === name))
+      ? knownPlayers.find((p) =>
+        p.hivegame_nicks.some(
+          (nick) => nick.replace(/^HG#/, "").toLowerCase() === name.toLowerCase(),
+        )
+      )
       : undefined
     const shouldHighlight = !!(
       player && player.groups.some((g) => highlightGroups.includes(g))
