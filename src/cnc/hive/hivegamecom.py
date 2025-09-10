@@ -6,13 +6,13 @@
 #
 # You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
+from pydantic import BaseModel, RootModel, field_validator
 import cbor2
 import requests
-from pydantic import BaseModel, RootModel
 import structlog
 
 from cnc.utils import pprint_dict
@@ -51,6 +51,13 @@ all_speeds: list[HG_GameSpeed] = [
 class HG_BatchInfo(BaseModel):
     id: UUID
     timestamp: datetime
+
+    @field_validator("timestamp")
+    def ensure_utc(cls, v: datetime) -> datetime:
+        """Ensure timestamp is UTC."""
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v
 
 
 class HG_PlayerFilter(BaseModel):
@@ -109,8 +116,15 @@ class HG_GameResponse(BaseModel):
     game_type: str  # e.g., "MLP" (Mosquito Ladybug Pillbug), "Base"
     last_interaction: datetime | None
 
+    @field_validator("created_at", "updated_at", "last_interaction")
+    def ensure_utc(cls, v: datetime | None) -> datetime | None:
+        """Ensure timestamp is UTC."""
+        if v and v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v
+
     model_config = {"extra": "allow"}  # extra fields will be available in model_extra
-    
+
 
 def fetch_games_between_players(
     player1: HG_PlayerId,

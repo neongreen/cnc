@@ -36,7 +36,9 @@ def pprint_dict(d: dict) -> str:
     def json_serializer(obj):
         if hasattr(obj, "model_dump"):
             return obj.model_dump()
-        if isinstance(obj, (datetime, bytes, bytearray)):
+        if isinstance(obj, datetime):
+            return obj.isoformat().replace("+00:00", "Z")
+        if isinstance(obj, (bytes, bytearray)):
             return str(obj)
         return str(obj)
 

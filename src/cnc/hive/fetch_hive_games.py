@@ -12,7 +12,7 @@ This avoids having to fetch games every time the page is generated.
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, NewType
 from pydantic import BaseModel
@@ -119,14 +119,17 @@ def fetch_all_player_games_with_cache(
                     "Player in cache, checking if stale", player_key=player_key
                 )
                 last_fetch = cache.players[player_key].last_fetch
-                is_stale = last_fetch < datetime.now() - timedelta(
+                # Normalize to aware UTC (treat legacy naive values as UTC)
+                if last_fetch.tzinfo is None:
+                    last_fetch = last_fetch.replace(tzinfo=timezone.utc)
+                is_stale = last_fetch < datetime.now(timezone.utc) - timedelta(
                     seconds=stale_seconds
-                )
+                ) or (stale_seconds == 0)
                 logger.debug(
                     "Player is stale, fetching"
                     if is_stale
                     else "Player is not stale, skipping fetch",
-                    last_fetch=last_fetch.strftime("%Y-%m-%d %H:%M:%S"),
+                    last_fetch=last_fetch.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
                     stale_seconds=stale_seconds,
                 )
                 should_fetch = is_stale
@@ -139,7 +142,7 @@ def fetch_all_player_games_with_cache(
                     # Merge games into existing cache entry
                     if player_key not in cache.players:
                         cache.players[player_key] = PlayerCache(
-                            last_fetch=datetime.now(), games=games
+                            last_fetch=datetime.now(timezone.utc), games=games
                         )
                         new_games += len(games)
                     else:
@@ -150,7 +153,7 @@ def fetch_all_player_games_with_cache(
                         )
                         new_games += len(updated_games) - len(cached_games)
                         cache.players[player_key] = PlayerCache(
-                            last_fetch=datetime.now(), games=updated_games
+                            last_fetch=datetime.now(timezone.utc), games=updated_games
                         )
                 except Exception as e:
                     logger.error(
@@ -180,7 +183,11 @@ def fetch_all_player_games_with_cache(
                 indent=2,
                 default=lambda obj: obj.model_dump()
                 if hasattr(obj, "model_dump")
-                else str(obj),
+                else (
+                    obj.isoformat().replace("+00:00", "Z")
+                    if isinstance(obj, datetime)
+                    else str(obj)
+                ),
             )
 
         logger.debug("Cache saved successfully")

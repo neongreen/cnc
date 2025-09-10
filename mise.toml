@@ -47,8 +47,12 @@ run = "pnpm exec vitest run --coverage"
 description = "Fetch and cache Hive game data"
 run = "uv run src/cnc/hive/fetch_hive_games.py"
 
-[tasks.fetch-hive-force]
+[tasks."fetch-hive:force"]
 description = "Force refresh all Hive game data"
+run = "uv run src/cnc/hive/fetch_hive_games.py --max-age=0"
+
+[tasks."fetch-hive:ignore-cache"]
+description = "Don't load the cache even, just redownload all Hive game data"
 run = "uv run src/cnc/hive/fetch_hive_games.py --force"
 
 [tasks."db:schema"]
