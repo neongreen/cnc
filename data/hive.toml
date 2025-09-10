@@ -1,12 +1,13 @@
 [settings]
 # order of player groups in the table
 group_order = [
-    "emily",
+    "👸",
+    "via Ema",
+    "via Rita",
     "crc",
     "csc",
     "via momoh",
     "(shared)",
-    "also emily",
     "bot",
     "World Champion",
     "WC 2024",
@@ -20,49 +21,59 @@ group_order = [
     "SCB",
 ]
 # highlight games between crc players
-highlight_games = ["crc", "csc", "SCB", "also emily"]
+highlight_games = ["crc", "csc", "SCB", "via Ema", "via Rita"]
 # fetch outsiders only for interesting players
-fetch_outsiders = ["emily", "crc", "csc"]
+fetch_outsiders = ["crc", "csc", "SCB", "via Ema", "via Rita", "👸"]
 
 # --- Players ---
 
 ## --- emily
 
 [players.emily]
-groups = ["emily"]
+groups = ["👸"]
 display_name = "🌸 Emily"
 hivegame = ["emily", "ParathaBread"]
 hivegame_current = "emily"
 
 [players.hanna]
-groups = ["also emily"]
+groups = ["via Ema"]
 display_name = "Hanna"
 hivegame = ["pocheshire"]
 
 [players.elvira]
-groups = ["also emily"]
+groups = ["via Ema"]
 display_name = "Elvira"
 hivegame = ["decibelvira"]
 
 [players.domino]
-groups = ["also emily", "SCB"]
+groups = ["via Ema", "SCB"]
 display_name = "Dominik"
 hivegame = ["domino"]
 
 [players.marek]
-groups = ["also emily", "SCB"]
+groups = ["via Ema", "SCB"]
 display_name = "Marek"
 hivegame = ["marekbauer07"]
 
 [players.chico]
-groups = ["also emily"]
+groups = ["via Ema"]
 display_name = "Ema's dad"
 hivegame = ["Chico"]
 
 [players.luk]
-groups = ["also emily"]
+groups = ["via Ema"]
 display_name = "Ema's mom"
 hivegame = ["luk"]
+
+[players.rita]
+groups = ["via Ema"]
+display_name = "Rita"
+hivegame = ["ritakazak"]
+
+[players.Zmitser]
+groups = ["via Rita"]
+display_name = "Zmitser"
+hivegame = ["Zmitser"]
 
 ## --- csc
 
