@@ -258,8 +258,8 @@ export default async function RecentPage() {
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <main>
-        <div className="w-[100vw] m-0 bg-white rounded-none shadow-none overflow-visible">
+      <main className="bg-background text-foreground">
+        <div className="w-[100vw] m-0 bg-background text-foreground rounded-none shadow-none overflow-visible">
           <div className="p-5">
             <RecentGames
               games={recentGames}

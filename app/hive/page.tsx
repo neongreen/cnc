@@ -269,12 +269,12 @@ export default async function Hive() {
         <meta name="description" content="Interactive Hive games table" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <main>
-        <div className="w-[100vw] m-0 bg-white rounded-none shadow-none overflow-visible">
+      <main className="bg-background text-foreground">
+        <div className="w-[100vw] m-0 bg-background text-foreground rounded-none shadow-none overflow-visible">
           <div className="p-5">
             <div
               id="hive-table-root"
-              className="overflow-x-auto border-2 border-[#e9ecef] rounded-lg bg-[#f8f9fa] p-5 max-w-6xl mx-auto"
+              className="overflow-x-auto border border-border rounded-lg bg-card dark:bg-muted/30 p-5 max-w-6xl mx-auto shadow-sm dark:shadow-none"
             >
               <HiveTable
                 config={config}
