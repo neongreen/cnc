@@ -117,11 +117,11 @@ function determinePlayerOrder(
 function getResultClass(result: "white" | "black" | "draw"): string {
   switch (result) {
     case "white":
-      return "text-green-600 font-semibold"
+      return "text-green-600 dark:text-green-400 font-semibold"
     case "black":
-      return "text-blue-600 font-semibold"
+      return "text-blue-600 dark:text-blue-300 font-semibold"
     case "draw":
-      return "text-gray-600 font-semibold"
+      return "text-gray-600 dark:text-gray-300 font-semibold"
     default:
       return ""
   }
@@ -321,15 +321,17 @@ export default function RecentGames({
         href={`https://hivegame.com/@/${name}`}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn("text-gray-700 hover:text-blue-600")}
+        className={cn(
+          "text-gray-700 hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400",
+        )}
         title={displayName}
       >
         <span
           className={cn(
             "px-1.5 py-0.5 rounded transition-colors duration-150",
             shouldHighlight
-              ? "bg-yellow-100 hover:bg-yellow-200"
-              : "bg-gray-100 hover:bg-gray-200",
+              ? "bg-yellow-100 hover:bg-yellow-200 text-yellow-900 dark:bg-yellow-400/20 dark:hover:bg-yellow-400/30 dark:text-yellow-100"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-800/60 dark:hover:bg-gray-700/60 dark:text-gray-100",
             isWinner
               ? "border-b-3 border-green-400"
               : "border-b-3 border-transparent",
@@ -345,19 +347,19 @@ export default function RecentGames({
   const groupedGames = groupGamesByDay(processedGames)
 
   return (
-    <div className="w-full bg-white rounded-lg">
+    <div className="w-full bg-card text-foreground rounded-lg border border-border shadow-sm dark:bg-slate-950/40 dark:shadow-none">
       <div className="space-y-6 max-w-5xl mx-auto pt-10">
         {groupedGames.map(([dateKey, dayGames]) => {
           const dayHeader = dayGames.length > 0
             ? formatDayHeader(dayGames[0].timestamp || dateKey)
             : formatDayHeader(dateKey)
           return (
-            <div key={dateKey} className="border-gray-200 pb-6">
+            <div key={dateKey} className="border-border pb-6">
               <div className="flex items-center gap-3 mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
                   {dayHeader}
                 </h3>
-                <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded dark:text-gray-200 dark:bg-gray-800/60">
                   {dayGames.length === 0
                     ? "No games"
                     : `${dayGames.length} game${dayGames.length === 1 ? "" : "s"}`}
@@ -366,7 +368,7 @@ export default function RecentGames({
 
               {dayGames.length === 0
                 ? (
-                  <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="text-center py-8 text-muted-foreground bg-muted/40 rounded-lg border border-border dark:bg-muted/20">
                     <p className="text-sm">No games played on this day</p>
                   </div>
                 )
@@ -375,13 +377,13 @@ export default function RecentGames({
                     <Table className="min-w-[700px] table-fixed">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold w-1/4">
+                          <TableHead className="bg-muted text-foreground border border-border p-3 text-left font-semibold w-1/4 dark:bg-muted/40">
                             Event
                           </TableHead>
-                          <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-left font-bold">
+                          <TableHead className="bg-muted text-foreground border border-border p-3 text-left font-semibold dark:bg-muted/40">
                             Match
                           </TableHead>
-                          <TableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-3 text-center font-bold w-24">
+                          <TableHead className="bg-muted text-foreground border border-border p-3 text-center font-semibold w-24 dark:bg-muted/40">
                             Rated
                           </TableHead>
                         </TableRow>
@@ -390,21 +392,21 @@ export default function RecentGames({
                         {dayGames.map((game: ProcessedGame) => (
                           <TableRow
                             key={game.game_id}
-                            className="hover:bg-gray-50"
+                            className="hover:bg-muted/50 dark:hover:bg-muted/20"
                           >
-                            <TableCell className="border border-[#dee2e6] p-3">
+                            <TableCell className="border border-border p-3">
                               <span
                                 className={cn(
                                   "text-sm",
                                   game.event
-                                    ? "text-purple-700 font-medium bg-purple-50 px-2 py-1 rounded"
-                                    : "text-gray-400 italic",
+                                    ? "text-purple-700 dark:text-purple-300 font-medium bg-purple-50 dark:bg-purple-500/20 px-2 py-1 rounded"
+                                    : "text-gray-400 dark:text-gray-500 italic",
                                 )}
                               >
                                 {game.event || "—"}
                               </span>
                             </TableCell>
-                            <TableCell className="border border-[#dee2e6] p-3">
+                            <TableCell className="border border-border p-3">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <InlinePlayerTag
                                   name={game.playerOrder.playerOne.name}
@@ -413,7 +415,7 @@ export default function RecentGames({
                                     && game.playerOrder.playerOne.originalColor
                                       === (game.result as "white" | "black")}
                                 />
-                                <span className="text-gray-400">vs</span>
+                                <span className="text-gray-400 dark:text-gray-500">vs</span>
                                 <InlinePlayerTag
                                   name={game.playerOrder.playerTwo.name}
                                   known={game.playerOrder.playerTwo.known}
@@ -421,16 +423,18 @@ export default function RecentGames({
                                     && game.playerOrder.playerTwo.originalColor
                                       === (game.result as "white" | "black")}
                                 />
-                                {game.result === "draw" && <span className="text-gray-600 ml-2">½-½</span>}
+                                {game.result === "draw" && (
+                                  <span className="text-gray-600 dark:text-gray-300 ml-2">½-½</span>
+                                )}
                               </div>
                             </TableCell>
-                            <TableCell className="border border-[#dee2e6] p-3 text-center">
+                            <TableCell className="border border-border p-3 text-center">
                               <span
                                 className={cn(
                                   "px-2 py-1 rounded text-xs font-medium",
                                   game.rated
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-gray-100 text-gray-800",
+                                    ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200"
+                                    : "bg-gray-100 text-gray-800 dark:bg-gray-800/60 dark:text-gray-200",
                                 )}
                               >
                                 {game.rated ? "Rated" : "Unrated"}

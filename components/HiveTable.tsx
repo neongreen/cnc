@@ -64,16 +64,16 @@ function HiveHeader({
   return (
     <UiTableHeader>
       <UiTableRow>
-        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold">
+        <UiTableHead className="bg-muted text-foreground border border-border p-2 text-center font-semibold dark:bg-muted/40">
           Player
         </UiTableHead>
-        <UiTableHead className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold">
+        <UiTableHead className="bg-muted text-foreground border border-border p-2 text-center font-semibold dark:bg-muted/40">
           Total Games
         </UiTableHead>
         {sortedPlayers.map((player) => (
           <UiTableHead
             key={player.id}
-            className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold min-w-20"
+            className="bg-muted text-foreground border border-border p-2 text-center font-semibold min-w-20 dark:bg-muted/40"
           >
             <PlayerInfo player={player} groupColorMap={groupColorMap} />
           </UiTableHead>
@@ -109,11 +109,21 @@ function GameStats({ stats }: { stats: GameStats | undefined }) {
 
   return (
     <>
-      {ratedStats && ratedTotal > 0 && <span>{formatStats(ratedStats)}</span>}
+      {ratedStats && ratedTotal > 0 && (
+        <span className="font-semibold">{formatStats(ratedStats)}</span>
+      )}
       <br />
       {unratedStats && unratedTotal > 0
-        ? <span className="unrated-text">{formatStats(unratedStats)}</span>
-        : <span className="unrated-text">&nbsp;</span>}
+        ? (
+          <span className="text-xs text-muted-foreground dark:text-muted-foreground/80">
+            {formatStats(unratedStats)}
+          </span>
+        )
+        : (
+          <span className="text-xs text-muted-foreground dark:text-muted-foreground/80">
+            &nbsp;
+          </span>
+        )}
     </>
   )
 }
@@ -139,11 +149,11 @@ function PlayerRow({
   return (
     <UiTableRow key={rowPlayer.id}>
       {/* Player name and groups */}
-      <UiTableCell className="bg-[#f8f9fa] border border-[#dee2e6] p-2 text-center font-bold w-[120px] min-w-[120px] max-w-[120px]">
+      <UiTableCell className="bg-muted text-foreground border border-border p-2 text-center font-semibold w-[120px] min-w-[120px] max-w-[120px] dark:bg-muted/40">
         <PlayerInfo player={rowPlayer} groupColorMap={groupColorMap} />
       </UiTableCell>
       {/* Total games */}
-      <UiTableCell className="bg-[#e9ecef] border border-[#dee2e6] p-2 text-center font-bold w-[80px] min-w-[80px] max-w-[80px]">
+      <UiTableCell className="bg-muted text-foreground border border-border p-2 text-center font-semibold w-[80px] min-w-[80px] max-w-[80px] dark:bg-muted/30">
         {rowPlayer.total_games}
       </UiTableCell>
       {/* Game stats (rest of the row) */}
@@ -155,7 +165,7 @@ function PlayerRow({
           <UiTableCell
             key={`${rowPlayer.id}-${colPlayer.id}`}
             className={cn(
-              "border border-[#dee2e6] p-1 text-center min-w-[60px] h-10 align-middle",
+              "border border-border p-1 text-center min-w-[60px] h-10 align-middle",
               cellClass,
             )}
           >
@@ -235,8 +245,10 @@ export default function HiveTable({
     colPlayer: Player,
     stats: GameStats | undefined,
   ) => {
-    if (rowPlayer.id === colPlayer.id) return "bg-[#e9ecef] text-[#6c757d]"
-    if (!stats) return "bg-[#f8f9fa] text-[#6c757d]"
+    if (rowPlayer.id === colPlayer.id)
+      return "bg-muted text-muted-foreground dark:bg-muted/40"
+    if (!stats)
+      return "bg-card text-muted-foreground dark:bg-muted/20"
 
     const ratedTotal = stats.rated_stats
       ? stats.rated_stats.wins
@@ -249,8 +261,9 @@ export default function HiveTable({
         + stats.unrated_stats.draws
       : 0
 
-    if (ratedTotal > 0 || unratedTotal > 0) return "bg-[#e8f5e8]"
-    return "bg-[#f8f9fa] text-[#6c757d]"
+    if (ratedTotal > 0 || unratedTotal > 0)
+      return "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200"
+    return "bg-card text-muted-foreground dark:bg-muted/20"
   }
 
   const getStats = (player1: Player, player2: Player) => {
@@ -260,7 +273,7 @@ export default function HiveTable({
   }
 
   return (
-    <div className="w-full min-w-[1200px] bg-white rounded-lg shadow">
+    <div className="w-full min-w-[1200px] bg-background text-foreground rounded-lg border border-border shadow-sm dark:bg-slate-950/40 dark:shadow-none">
       <div className="min-w-[800px]">
         <UiTable className="w-max text-[12px] border-collapse">
           <HiveHeader
