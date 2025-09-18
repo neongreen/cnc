@@ -1,21 +1,12 @@
 "use client"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type { RecentHiveGame } from "@/lib/hiveRecent"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import type { Player } from "../lib/hiveData"
 
-type RecentGame = {
-  game_id: string
-  white_player: string
-  black_player: string
-  white_known: boolean
-  black_known: boolean
-  result: "white" | "black" | "draw"
-  rated: boolean
-  timestamp?: string
-  event: string | null
-}
+type RecentGame = RecentHiveGame
 
 type RecentGamesProps = {
   games: RecentGame[]
