@@ -70,6 +70,11 @@ groups = ["via Ema"]
 display_name = "Oksana"
 hivegame = ["oksuta"]
 
+[players.ztjona]
+groups = ["via Ema"]
+display_name = "ztjona!"
+hivegame = ["ztjona"]
+
 [players.rita]
 groups = ["via Ema"]
 display_name = "Rita"
