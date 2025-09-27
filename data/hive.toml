@@ -184,7 +184,8 @@ hivegame = ["Stickbug"]
 [players.kuyi]
 groups = ["crc"]
 display_name = "Kuyi"
-hivegame = ["Zxelpski"]
+hivegame = ["Zxelpski", "Kuyicon"]
+hivegame_current = "Kuyicon"
 
 [players.surviv]
 groups = ["crc"]
