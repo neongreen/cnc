@@ -59,8 +59,14 @@ def parse_tool_spec(spec: str) -> tuple[str, str]:
 
 def confirm_plan(plan: InstallationPlan) -> bool:
     """Ask user to confirm the installation plan."""
+    unsatisfied = plan.get_unsatisfied_steps()
+    
     print()
     print(plan.display())
+    print()
+    
+    # Show summary
+    print(f"This will install {len(unsatisfied)} item(s) using mise.")
     print()
 
     try:
@@ -97,6 +103,11 @@ def main() -> int:
 
     # Check if anything needs to be done
     unsatisfied = plan.get_unsatisfied_steps()
+    satisfied_count = len(plan.steps) - len(unsatisfied)
+    
+    if satisfied_count > 0:
+        print(f"✓ {satisfied_count} requirement(s) already satisfied")
+    
     if not unsatisfied:
         print("✓ All requirements are already satisfied!")
         return 0

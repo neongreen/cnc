@@ -133,6 +133,36 @@ def test_parse_tool_spec():
     assert version == "3.11"
 
 
+def test_cycle_detection():
+    """Test that cycle detection works."""
+    plan = InstallationPlan()
+    req1 = ToolRequirement(tool_name="tool1")
+    req2 = ToolRequirement(tool_name="tool2")
+    req3 = ToolRequirement(tool_name="tool3")
+
+    # Add steps without cycles - should work
+    idx1 = plan.add_step(req1)
+    idx2 = plan.add_step(req2, dependencies=[idx1])
+    idx3 = plan.add_step(req3, dependencies=[idx2])
+
+    assert len(plan.steps) == 3
+
+    # Try to create a cycle - should fail
+    req4 = ToolRequirement(tool_name="tool4")
+    try:
+        # This would create a cycle if we made idx3 depend on idx4 and idx4 depend on idx1
+        # But we can't do that with the current API since we'd have to add idx4 first
+        # Let's test a simpler case: self-dependency
+        plan = InstallationPlan()
+        idx = plan.add_step(req1)
+        # Try to create self-dependency (this would need to be done by manipulating the step)
+        plan.steps[idx].dependencies = [idx]
+        assert plan._has_cycle(idx)
+        print("✓ Cycle detection works for self-reference")
+    except ValueError as e:
+        print(f"✓ Caught expected error: {e}")
+
+
 if __name__ == "__main__":
     # Run tests
     import traceback
@@ -148,6 +178,7 @@ if __name__ == "__main__":
         test_installation_plan_to_json,
         test_installation_plan_display,
         test_parse_tool_spec,
+        test_cycle_detection,
     ]
 
     passed = 0

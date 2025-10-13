@@ -44,7 +44,38 @@ class InstallationPlan:
             dependencies=dependencies or [],
         )
         self.steps.append(step)
-        return len(self.steps) - 1
+        step_idx = len(self.steps) - 1
+        
+        # Validate no cycles
+        if self._has_cycle(step_idx):
+            self.steps.pop()
+            raise ValueError(f"Adding this step would create a dependency cycle")
+        
+        return step_idx
+
+    def _has_cycle(self, start_idx: int) -> bool:
+        """Check if adding a step creates a cycle in the dependency graph."""
+        visited = set()
+        
+        def visit(idx: int, path: set[int]) -> bool:
+            if idx in path:
+                return True
+            if idx in visited:
+                return False
+            
+            visited.add(idx)
+            path.add(idx)
+            
+            for dep_idx in self.steps[idx].dependencies:
+                if dep_idx >= len(self.steps):
+                    continue
+                if visit(dep_idx, path):
+                    return True
+            
+            path.remove(idx)
+            return False
+        
+        return visit(start_idx, set())
 
     def get_unsatisfied_steps(self) -> list[InstallationStep]:
         """Get steps that are not yet satisfied."""
@@ -109,26 +140,35 @@ class InstallationPlan:
         print(self.display())
         print()
 
+        # Create mapping for display numbers
+        step_to_display_num = {}
+        display_num = 1
+        for i, step in enumerate(self.steps):
+            if not step.requirement.is_satisfied():
+                step_to_display_num[i] = display_num
+                display_num += 1
+
         for i, step in enumerate(self.steps):
             if step.requirement.is_satisfied():
                 continue
 
-            print(f"Executing step {i + 1}...")
+            step_num = step_to_display_num[i]
+            print(f"[{step_num}/{len(unsatisfied)}] {step.requirement.get_description()}")
 
             if isinstance(step.requirement, ToolRequirement):
                 success = self._install_tool(step.requirement)
             else:
                 # For other requirement types, we'd implement their execution here
-                print(f"  Skipping unsupported requirement type: {type(step.requirement).__name__}")
+                print(f"  ⚠ Skipping unsupported requirement type: {type(step.requirement).__name__}")
                 success = False
 
             if not success:
-                print(f"✗ Failed to execute step {i + 1}")
+                print(f"  ✗ Step {step_num} failed")
                 return False
 
-            print(f"✓ Step {i + 1} completed")
+            print(f"  ✓ Step {step_num} completed")
+            print()
 
-        print()
         print("✓ Installation plan completed successfully!")
         return True
 
