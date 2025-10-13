@@ -72,15 +72,26 @@ class InstallationPlan:
         lines.append(f"Installation plan ({len(unsatisfied)} step(s)):")
         lines.append("")
 
-        step_num = 1
+        # Create a mapping from step index to display number (only for unsatisfied)
+        step_to_display_num = {}
+        display_num = 1
         for i, step in enumerate(self.steps):
             if not step.requirement.is_satisfied():
-                prefix = f"  {step_num}."
+                step_to_display_num[i] = display_num
+                display_num += 1
+
+        # Display unsatisfied steps
+        for i, step in enumerate(self.steps):
+            if not step.requirement.is_satisfied():
+                num = step_to_display_num[i]
+                prefix = f"  {num}."
                 lines.append(f"{prefix} {step.requirement.get_description()}")
-                if step.dependencies:
-                    dep_nums = [str(self.steps.index(self.steps[d]) + 1) for d in step.dependencies]
+                
+                # Show dependencies (only those that are unsatisfied)
+                unsatisfied_deps = [d for d in step.dependencies if d in step_to_display_num]
+                if unsatisfied_deps:
+                    dep_nums = [str(step_to_display_num[d]) for d in unsatisfied_deps]
                     lines.append(f"     (depends on: {', '.join(dep_nums)})")
-                step_num += 1
 
         return "\n".join(lines)
 
