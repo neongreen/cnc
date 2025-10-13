@@ -20,6 +20,9 @@ dependencies = [
     "structlog>=25.4.0",
 ]
 
+[project.scripts]
+want = "cnc.want.cli:main"
+
 [dependency-groups]
 dev = ["pyright>=1.1.404"]
 
