@@ -49,7 +49,7 @@ class InstallationPlan:
         # Validate no cycles
         if self._has_cycle(step_idx):
             self.steps.pop()
-            raise ValueError(f"Adding this step would create a dependency cycle")
+            raise ValueError("Adding this step would create a dependency cycle")
         
         return step_idx
 
@@ -67,8 +67,8 @@ class InstallationPlan:
             path.add(idx)
             
             for dep_idx in self.steps[idx].dependencies:
-                if dep_idx >= len(self.steps):
-                    continue
+                if dep_idx < 0 or dep_idx >= len(self.steps):
+                    raise ValueError(f"Invalid dependency index {dep_idx} (valid range: 0-{len(self.steps)-1})")
                 if visit(dep_idx, path):
                     return True
             
