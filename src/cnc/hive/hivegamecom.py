@@ -7,10 +7,10 @@
 # You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, RootModel, field_validator
+from pydantic import BaseModel, RootModel, field_validator, model_serializer
 import cbor2
 import requests
 import structlog
@@ -122,6 +122,30 @@ class HG_GameResponse(BaseModel):
         if v and v.tzinfo is None:
             return v.replace(tzinfo=timezone.utc)
         return v
+
+    @model_serializer(mode='wrap')
+    def _serialize_model(self, serializer: Any) -> dict[str, Any]:
+        """Custom serializer that excludes move history fields from the output"""
+        data = serializer(self)
+        
+        # Remove move history fields from model_extra if present
+        if isinstance(data, dict):
+            # Fields to exclude from serialization
+            exclude_fields = {
+                'reserve_black',
+                'reserve_white',
+                'history',
+                'moves',
+                'spawns',
+                'game_control_history',
+                'move_times',
+                'hashes',
+                'repetitions',
+            }
+            for field in exclude_fields:
+                data.pop(field, None)
+        
+        return data
 
     model_config = {"extra": "allow"}  # extra fields will be available in model_extra
 
